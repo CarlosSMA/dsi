@@ -1,3 +1,31 @@
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import { StyleSheet, TextInput, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+
+import { AppColors, Fonts } from '@/constants/theme';
+import MapSurface from '@/components/map-surface';
+
+export default function MapScreen() {
+  return (
+    <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
+      <View style={styles.screen}>
+        <View style={styles.mapSurface} accessibilityLabel="Mapa de Recife">
+          <MapSurface />
+
+          <View style={styles.topControls}>
+          <View
+            accessibilityLabel="Câmera"
+            style={styles.cameraButton}
+            accessible
+            pointerEvents="none">
+            <MaterialIcons name="photo-camera" size={30} color={AppColors.surface} />
+          </View>
+        </View>
+      </View>
+    </SafeAreaView>
+  );
+}
+
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
@@ -11,34 +39,7 @@ const styles = StyleSheet.create({
     flex: 1,
     overflow: 'hidden',
     position: 'relative',
-    backgroundColor: AppColors.mapLand,
-  },
-  mapGrid: {
-    ...StyleSheet.absoluteFill,
-    opacity: 0.35,
-    backgroundColor: AppColors.mapDistrict,
-    borderWidth: 20,
-    borderColor: AppColors.mapBorder,
-  },
-  mapWater: {
-    position: 'absolute',
-    top: 0,
-    right: 0,
-    bottom: 0,
-    width: '24%',
-    backgroundColor: AppColors.mapWater,
-    borderLeftWidth: 2,
-    borderLeftColor: AppColors.mapWaterBorder,
-  },
-  mapLabel: {
-    position: 'absolute',
-    top: '48%',
-    left: '35%',
-    color: AppColors.mapLabel,
-    fontFamily: Fonts?.sans,
-    fontSize: 20,
-    fontWeight: '600',
-    letterSpacing: 1,
+    backgroundColor: AppColors.appBackground,
   },
   topControls: {
     position: 'absolute',
