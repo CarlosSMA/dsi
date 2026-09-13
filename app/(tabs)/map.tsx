@@ -13,6 +13,15 @@ export default function MapScreen() {
           <MapSurface />
 
           <View style={styles.topControls}>
+            <View style={styles.searchField}>
+              <MaterialIcons name="search" size={25} color={AppColors.primaryText} />
+              <TextInput
+                accessibilityLabel="Pesquisar região"
+                placeholder="Pesquisar"
+                placeholderTextColor={AppColors.secondaryText}
+                style={styles.searchInput}
+              />
+            </View>
 
             <View
               accessibilityLabel="Perfil"
