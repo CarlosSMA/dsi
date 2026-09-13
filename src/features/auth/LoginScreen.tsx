@@ -1,4 +1,5 @@
 import { MaterialIcons } from '@expo/vector-icons';
+import { Image } from 'expo-image';
 import { useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -37,7 +38,11 @@ export function LoginScreen() {
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.brandHeader}>
           <View style={styles.logoMark}>
-            <MaterialIcons name="water-drop" size={34} color={colors.primary} />
+            <Image
+              source={require('@/assets/images/vetor-risco-logo.png')}
+              contentFit="contain"
+              style={styles.logoImage}
+            />
           </View>
           <View style={styles.brandRow}>
             <Text style={styles.brandName}>VetorRisco</Text>
@@ -184,6 +189,10 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     marginBottom: 14,
+  },
+  logoImage: {
+    width: 48,
+    height: 58,
   },
   brandRow: {
     flexDirection: 'row',
