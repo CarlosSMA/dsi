@@ -14,10 +14,18 @@ export const AppColors = {
   appBackground: '#F8FAFC',
   surface: '#FFFFFF',
   primaryText: '#0F172A',
+  secondaryText: '#64748B',
   highRisk: '#DC2626',
   attention: '#F59E0B',
   safe: '#10B981',
   inactive: '#E2E8F0',
+  mapLand: '#E8E6DD',
+  mapDistrict: '#F0B85C',
+  mapBorder: '#D5D1C4',
+  mapWater: '#8BD3E6',
+  mapWaterBorder: '#C4EAF0',
+  mapLabel: '#7A5A2B',
+  shadow: '#0F172A',
 };
 
 export const Colors = {
