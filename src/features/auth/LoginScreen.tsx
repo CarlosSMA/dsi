@@ -1,7 +1,22 @@
 import { MaterialIcons } from '@expo/vector-icons';
-import { SafeAreaView, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useState } from 'react';
+import {
+  Pressable,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from 'react-native';
+
+import { formatCpf } from './utils/cpf';
 
 export function LoginScreen() {
+  const [cpf, setCpf] = useState('');
+  const [senha, setSenha] = useState('');
+  const [isPasswordVisible, setIsPasswordVisible] = useState(false);
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
@@ -24,7 +39,72 @@ export function LoginScreen() {
           </Text>
         </View>
 
-        <View style={styles.formPlaceholder} />
+        <View style={styles.form}>
+          <View style={styles.fieldGroup}>
+            <Text style={styles.fieldLabel}>CPF</Text>
+            <View style={styles.inputWrapper}>
+              <MaterialIcons name="badge" size={20} color={colors.icon} />
+              <TextInput
+                value={cpf}
+                onChangeText={(value) => setCpf(formatCpf(value))}
+                placeholder="CPF"
+                placeholderTextColor={colors.placeholder}
+                keyboardType="numeric"
+                maxLength={14}
+                style={styles.input}
+              />
+            </View>
+          </View>
+
+          <View style={styles.fieldGroup}>
+            <View style={styles.passwordLabelRow}>
+              <Text style={styles.fieldLabel}>Senha</Text>
+              <Pressable accessibilityRole="button" onPress={() => undefined}>
+                <Text style={styles.forgotPassword}>Esqueci minha senha</Text>
+              </Pressable>
+            </View>
+            <View style={styles.inputWrapper}>
+              <MaterialIcons name="lock-outline" size={20} color={colors.icon} />
+              <TextInput
+                value={senha}
+                onChangeText={setSenha}
+                placeholder="Senha"
+                placeholderTextColor={colors.placeholder}
+                secureTextEntry={!isPasswordVisible}
+                style={styles.input}
+              />
+              <Pressable
+                accessibilityLabel={isPasswordVisible ? 'Ocultar senha' : 'Mostrar senha'}
+                accessibilityRole="button"
+                hitSlop={8}
+                onPress={() => setIsPasswordVisible((visible) => !visible)}>
+                <MaterialIcons
+                  name={isPasswordVisible ? 'visibility' : 'visibility-off'}
+                  size={21}
+                  color={colors.icon}
+                />
+              </Pressable>
+            </View>
+          </View>
+        </View>
+
+        <View style={styles.actions}>
+          <Pressable accessibilityRole="button" onPress={() => undefined} style={styles.primaryButton}>
+            <Text style={styles.primaryButtonText}>Entrar</Text>
+            <MaterialIcons name="arrow-forward" size={21} color="#FFFFFF" />
+          </Pressable>
+
+          <View style={styles.dividerRow}>
+            <View style={styles.divider} />
+            <Text style={styles.dividerLabel}>OU</Text>
+            <View style={styles.divider} />
+          </View>
+
+          <Pressable accessibilityRole="button" onPress={() => undefined} style={styles.secondaryButton}>
+            <MaterialIcons name="person-add-alt-1" size={19} color={colors.primary} />
+            <Text style={styles.secondaryButtonText}>Criar nova conta</Text>
+          </Pressable>
+        </View>
 
         <View style={styles.footer}>
           <View style={styles.footerBrandRow}>
@@ -44,6 +124,8 @@ const colors = {
   navy: '#203D7D',
   ink: '#182234',
   muted: '#667080',
+  icon: '#7C8798',
+  placeholder: '#A1A9B5',
 };
 
 const styles = StyleSheet.create({
@@ -103,9 +185,100 @@ const styles = StyleSheet.create({
     fontSize: 15,
     lineHeight: 22,
   },
-  formPlaceholder: {
+  form: {
+    gap: 20,
+    marginTop: 42,
+    marginBottom: 34,
+  },
+  fieldGroup: {
+    gap: 8,
+  },
+  fieldLabel: {
+    color: colors.ink,
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  passwordLabelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  forgotPassword: {
+    color: colors.primary,
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  inputWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    minHeight: 48,
+    paddingHorizontal: 14,
+    borderWidth: 1,
+    borderColor: '#E0E4EA',
+    borderRadius: 16,
+    backgroundColor: '#FFFFFF',
+    shadowColor: '#1B2B4B',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 4,
+    elevation: 1,
+  },
+  input: {
     flex: 1,
-    minHeight: 280,
+    minHeight: 46,
+    marginLeft: 10,
+    paddingVertical: 0,
+    color: colors.ink,
+    fontSize: 14,
+  },
+  actions: {
+    gap: 16,
+    marginBottom: 48,
+  },
+  primaryButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 46,
+    gap: 10,
+    borderRadius: 15,
+    backgroundColor: colors.primary,
+  },
+  primaryButtonText: {
+    color: '#FFFFFF',
+    fontSize: 15,
+    fontWeight: '600',
+  },
+  dividerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  divider: {
+    flex: 1,
+    height: 1,
+    backgroundColor: '#E0E4EA',
+  },
+  dividerLabel: {
+    color: '#7D8796',
+    fontSize: 12,
+    fontWeight: '500',
+  },
+  secondaryButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 46,
+    gap: 9,
+    borderWidth: 1,
+    borderColor: '#E0E4EA',
+    borderRadius: 15,
+    backgroundColor: '#FFFFFF',
+  },
+  secondaryButtonText: {
+    color: colors.navy,
+    fontSize: 15,
+    fontWeight: '600',
   },
   footer: {
     alignItems: 'center',
