@@ -1,5 +1,6 @@
 import { MaterialIcons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
+import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -19,6 +20,7 @@ import { useLogin } from './useLogin';
 
 export function LoginScreen() {
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
+  const router = useRouter();
   const { error: loginError, handleSubmit } = useLogin();
   const {
     control,
@@ -30,7 +32,11 @@ export function LoginScreen() {
   });
 
   const onSubmit = async (data: LoginFormData): Promise<void> => {
-    await handleSubmit(data);
+    const isAuthenticated = await handleSubmit(data);
+
+    if (isAuthenticated) {
+      router.replace('/(tabs)');
+    }
   };
 
   return (
