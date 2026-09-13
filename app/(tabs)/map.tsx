@@ -13,6 +13,16 @@ export default function MapScreen() {
           <MapSurface />
 
           <View style={styles.topControls}>
+
+            <View
+              accessibilityLabel="Perfil"
+              style={styles.profileButton}
+              accessible
+              pointerEvents="none">
+              <MaterialIcons name="person" size={28} color={AppColors.primaryText} />
+            </View>
+          </View>
+
           <View
             accessibilityLabel="Câmera"
             style={styles.cameraButton}
