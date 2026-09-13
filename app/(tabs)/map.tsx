@@ -1,11 +1,37 @@
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-import { StyleSheet, TextInput, View } from 'react-native';
+import * as ImagePicker from 'expo-image-picker';
+import { Alert, Pressable, StyleSheet, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useState } from 'react';
 
 import { AppColors, Fonts } from '@/constants/theme';
 import MapSurface from '@/components/map-surface';
 
 export default function MapScreen() {
+  const [capturedPhoto, setCapturedPhoto] = useState<string | null>(null);
+
+  async function takePhoto() {
+    const permission = await ImagePicker.requestCameraPermissionsAsync();
+
+    if (!permission.granted) {
+      Alert.alert(
+        'Permissão necessária',
+        'Permita o acesso à câmera para registrar uma ocorrência.'
+      );
+      return;
+    }
+
+    const result = await ImagePicker.launchCameraAsync({
+      allowsEditing: false,
+      cameraType: ImagePicker.CameraType.back,
+      quality: 1,
+    });
+
+    if (!result.canceled) {
+      setCapturedPhoto(result.assets[0].uri);
+    }
+  }
+
   return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
       <View style={styles.screen}>
@@ -32,13 +58,12 @@ export default function MapScreen() {
             </View>
           </View>
 
-          <View
-            accessibilityLabel="Câmera"
+          <Pressable
+            accessibilityLabel={capturedPhoto ? 'Câmera (foto capturada)' : 'Câmera'}
             style={styles.cameraButton}
-            accessible
-            pointerEvents="none">
+            onPress={takePhoto}>
             <MaterialIcons name="photo-camera" size={30} color={AppColors.surface} />
-          </View>
+          </Pressable>
         </View>
       </View>
     </SafeAreaView>
