@@ -1,5 +1,7 @@
 import { MaterialIcons } from '@expo/vector-icons';
 import { useState } from 'react';
+import { Controller, useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import {
   Pressable,
   SafeAreaView,
@@ -11,11 +13,24 @@ import {
 } from 'react-native';
 
 import { formatCpf } from './utils/cpf';
+import { loginSchema, type LoginFormData } from './schema';
+import { useLogin } from './useLogin';
 
 export function LoginScreen() {
-  const [cpf, setCpf] = useState('');
-  const [senha, setSenha] = useState('');
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
+  const { error: loginError, handleSubmit } = useLogin();
+  const {
+    control,
+    handleSubmit: submitForm,
+    formState: { errors, isSubmitting },
+  } = useForm<LoginFormData>({
+    resolver: zodResolver(loginSchema),
+    defaultValues: { cpf: '', senha: '' },
+  });
+
+  const onSubmit = async (data: LoginFormData): Promise<void> => {
+    await handleSubmit(data);
+  };
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -44,16 +59,24 @@ export function LoginScreen() {
             <Text style={styles.fieldLabel}>CPF</Text>
             <View style={styles.inputWrapper}>
               <MaterialIcons name="badge" size={20} color={colors.icon} />
-              <TextInput
-                value={cpf}
-                onChangeText={(value) => setCpf(formatCpf(value))}
-                placeholder="CPF"
-                placeholderTextColor={colors.placeholder}
-                keyboardType="numeric"
-                maxLength={14}
-                style={styles.input}
+              <Controller
+                control={control}
+                name="cpf"
+                render={({ field: { onChange, onBlur, value } }) => (
+                  <TextInput
+                    value={value}
+                    onBlur={onBlur}
+                    onChangeText={(inputValue) => onChange(formatCpf(inputValue))}
+                    placeholder="CPF"
+                    placeholderTextColor={colors.placeholder}
+                    keyboardType="numeric"
+                    maxLength={14}
+                    style={styles.input}
+                  />
+                )}
               />
             </View>
+            {errors.cpf?.message ? <Text style={styles.errorText}>{errors.cpf.message}</Text> : null}
           </View>
 
           <View style={styles.fieldGroup}>
@@ -65,13 +88,20 @@ export function LoginScreen() {
             </View>
             <View style={styles.inputWrapper}>
               <MaterialIcons name="lock-outline" size={20} color={colors.icon} />
-              <TextInput
-                value={senha}
-                onChangeText={setSenha}
-                placeholder="Senha"
-                placeholderTextColor={colors.placeholder}
-                secureTextEntry={!isPasswordVisible}
-                style={styles.input}
+              <Controller
+                control={control}
+                name="senha"
+                render={({ field: { onChange, onBlur, value } }) => (
+                  <TextInput
+                    value={value}
+                    onBlur={onBlur}
+                    onChangeText={onChange}
+                    placeholder="Senha"
+                    placeholderTextColor={colors.placeholder}
+                    secureTextEntry={!isPasswordVisible}
+                    style={styles.input}
+                  />
+                )}
               />
               <Pressable
                 accessibilityLabel={isPasswordVisible ? 'Ocultar senha' : 'Mostrar senha'}
@@ -85,13 +115,19 @@ export function LoginScreen() {
                 />
               </Pressable>
             </View>
+            {errors.senha?.message ? <Text style={styles.errorText}>{errors.senha.message}</Text> : null}
           </View>
         </View>
 
         <View style={styles.actions}>
-          <Pressable accessibilityRole="button" onPress={() => undefined} style={styles.primaryButton}>
-            <Text style={styles.primaryButtonText}>Entrar</Text>
-            <MaterialIcons name="arrow-forward" size={21} color="#FFFFFF" />
+          {loginError ? <Text style={styles.formError}>{loginError}</Text> : null}
+          <Pressable
+            accessibilityRole="button"
+            disabled={isSubmitting}
+            onPress={submitForm(onSubmit)}
+            style={[styles.primaryButton, isSubmitting && styles.primaryButtonDisabled]}>
+            <Text style={styles.primaryButtonText}>{isSubmitting ? 'Entrando...' : 'Entrar'}</Text>
+            {!isSubmitting ? <MaterialIcons name="arrow-forward" size={21} color="#FFFFFF" /> : null}
           </Pressable>
 
           <View style={styles.dividerRow}>
@@ -231,6 +267,10 @@ const styles = StyleSheet.create({
     color: colors.ink,
     fontSize: 14,
   },
+  errorText: {
+    color: '#C43D4B',
+    fontSize: 12,
+  },
   actions: {
     gap: 16,
     marginBottom: 48,
@@ -243,6 +283,14 @@ const styles = StyleSheet.create({
     gap: 10,
     borderRadius: 15,
     backgroundColor: colors.primary,
+  },
+  primaryButtonDisabled: {
+    opacity: 0.65,
+  },
+  formError: {
+    color: '#C43D4B',
+    fontSize: 13,
+    textAlign: 'center',
   },
   primaryButtonText: {
     color: '#FFFFFF',
