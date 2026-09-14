@@ -1,16 +1,18 @@
 import { AppColors } from "@/constants/theme";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
-import { Alert, Pressable } from "react-native";
+import { Alert, Pressable, View } from "react-native";
 import * as ImagePicker from 'expo-image-picker';
 import { styles } from "@/constants/style";
 
 export function Camera({ cameraType, quality }: {cameraType?: ImagePicker.CameraType, quality?: number}) {
   return (
-    <Pressable
-      style={styles.cameraButton}
-      onPress={async () => takePhoto(cameraType, quality)}>
-      <MaterialIcons name="photo-camera" size={30} color={AppColors.surface} />
-    </Pressable>
+    <View>
+      <Pressable
+        style={styles.cameraButton}
+        onPress={async () => takePhoto(cameraType, quality)}>
+        <MaterialIcons name="photo-camera" size={30} color={AppColors.surface} />
+      </Pressable>
+    </View>
   )
 }
 
