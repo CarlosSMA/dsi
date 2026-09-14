@@ -1,11 +1,13 @@
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import * as ImagePicker from 'expo-image-picker';
-import { Alert, Pressable, StyleSheet, TextInput, View } from 'react-native';
+import { Alert, Pressable, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useState } from 'react';
 
-import { AppColors, Fonts } from '@/constants/theme';
+import { AppColors } from '@/constants/theme';
 import MapSurface from '@/components/map-surface';
+import { Camera } from '@/components/camera';
+import { styles } from '@/constants/style';
 
 export default function MapScreen() {
   const [capturedPhoto, setCapturedPhoto] = useState<string | null>(null);
@@ -23,8 +25,8 @@ export default function MapScreen() {
 
     const result = await ImagePicker.launchCameraAsync({
       allowsEditing: false,
-      cameraType: ImagePicker.CameraType.back,
-      quality: 1,
+      cameraType: ImagePicker.CameraType.front,
+      quality: 0.5,
     });
 
     if (!result.canceled) {
@@ -58,12 +60,9 @@ export default function MapScreen() {
             </View>
           </View>
 
-          <Pressable
-            accessibilityLabel={capturedPhoto ? 'Câmera (foto capturada)' : 'Câmera'}
-            style={styles.cameraButton}
-            onPress={takePhoto}>
-            <MaterialIcons name="photo-camera" size={30} color={AppColors.surface} />
-          </Pressable>
+          <View>
+            <Camera></Camera>
+          </View>
         </View>
       </View>
     </SafeAreaView>
