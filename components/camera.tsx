@@ -6,7 +6,7 @@ import { styles } from "@/constants/style";
 
 export function Camera({ cameraType, quality }: {cameraType?: ImagePicker.CameraType, quality?: number}) {
   return (
-    <View>
+    <View style={styles.cameraContainer}>
       <Pressable
         style={styles.cameraButton}
         onPress={async () => takePhoto(cameraType, quality)}>
@@ -32,7 +32,7 @@ async function takePhoto(
 
   return await ImagePicker.launchCameraAsync({
     allowsEditing: false,
-    cameraType: cameraType ? cameraType : ImagePicker.CameraType.front,
+    cameraType: cameraType ? cameraType : ImagePicker.CameraType.back,
     quality: quality ? quality : 0.5,
   });
 }

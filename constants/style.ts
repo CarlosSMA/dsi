@@ -61,9 +61,6 @@ export const styles = StyleSheet.create({
     elevation: 4,
   },
   cameraButton: {
-    position: 'absolute',
-    bottom: 28,
-    alignSelf: 'center',
     width: 86,
     height: 86,
     alignItems: 'center',
@@ -75,5 +72,12 @@ export const styles = StyleSheet.create({
     shadowOpacity: 0.24,
     shadowRadius: 8,
     elevation: 6,
+  },
+  cameraContainer: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 28,
+    alignItems: 'center',
   },
 });
