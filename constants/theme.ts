@@ -8,10 +8,30 @@ import { Platform } from 'react-native';
 const tintColorLight = '#0a7ea4';
 const tintColorDark = '#fff';
 
+export const AppColors = {
+  actionBlue: '#1C64F2',
+  securityBlue: '#1E3A8A',
+  appBackground: '#F8FAFC',
+  surface: '#FFFFFF',
+  primaryText: '#0F172A',
+  secondaryText: '#64748B',
+  highRisk: '#DC2626',
+  attention: '#F59E0B',
+  safe: '#10B981',
+  inactive: '#E2E8F0',
+  mapLand: '#E8E6DD',
+  mapDistrict: '#F0B85C',
+  mapBorder: '#D5D1C4',
+  mapWater: '#8BD3E6',
+  mapWaterBorder: '#C4EAF0',
+  mapLabel: '#7A5A2B',
+  shadow: '#0F172A',
+};
+
 export const Colors = {
   light: {
-    text: '#11181C',
-    background: '#fff',
+    text: AppColors.primaryText,
+    background: AppColors.appBackground,
     tint: tintColorLight,
     icon: '#687076',
     tabIconDefault: '#687076',
