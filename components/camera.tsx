@@ -62,6 +62,15 @@ export function Camera({
       latitude: location.latitude,
       longitude: location.longitude,
     });
+    Alert.alert('Ocorrência registrada', 'Sua ocorrência foi enviada para análise.');
+  } catch (error) {
+    console.error('Erro ao registrar ocorrência:', error);
+    Alert.alert('Erro', 'Não foi possível registrar a ocorrência. Tente novamente.');
+  } finally {
+    setIsSubmitting(false);
+  }
+}
+
 async function takePhoto(
   cameraType?: ImagePicker.CameraType.back | ImagePicker.CameraType.front,
   quality?: number
@@ -76,7 +85,7 @@ async function takePhoto(
     return;
   }
 
-  return await ImagePicker.launchCameraAsync({
+  return ImagePicker.launchCameraAsync({
     allowsEditing: false,
     cameraType: cameraType ? cameraType : ImagePicker.CameraType.back,
     quality: quality ? quality : 0.5,
