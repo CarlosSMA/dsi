@@ -3,6 +3,7 @@ import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { Alert, Pressable, View } from "react-native";
 import * as ImagePicker from 'expo-image-picker';
 import { styles } from "@/constants/style";
+import { useAuth } from "@/src/contexts/auth-context";
 
 interface Location {
   latitude: number;
@@ -20,6 +21,16 @@ export function Camera({
   quality,
   location,
 }: CameraProps) {
+  const { usuario } = useAuth();
+      const result = await takePhoto(cameraType, quality);
+      if (!result || result.canceled) {
+        return;
+      }
+
+      if (!usuario) {
+        Alert.alert('Sessão necessária', 'Entre na sua conta para registrar uma ocorrência.');
+        return;
+      }
       await registrarDenuncia({
         id_denunciador: usuario.id,
         latitude: location.latitude,
