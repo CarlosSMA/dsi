@@ -1,7 +1,5 @@
 import { useState } from 'react';
 
-import { useAuth } from '@/src/contexts/AuthContext';
-
 import type { LoginFormData } from './schema';
 
 type LoginResult = {
@@ -9,7 +7,7 @@ type LoginResult = {
   message?: string;
 };
 
-async function login(cpf: string, senha: string): Promise<LoginResult> {
+async function loginMock(cpf: string, senha: string): Promise<LoginResult> {
   await new Promise<void>((resolve) => setTimeout(resolve, 800));
 
   if (senha === 'erro') {
@@ -23,23 +21,17 @@ async function login(cpf: string, senha: string): Promise<LoginResult> {
 }
 
 export function useLogin() {
-  const { login: setAuthenticatedUser } = useAuth();
   const [error, setError] = useState<string | null>(null);
 
   async function handleSubmit({ cpf, senha }: LoginFormData): Promise<boolean> {
     setError(null);
 
-    const result = await login(cpf, senha);
+    const result = await loginMock(cpf, senha);
 
     if (!result.success) {
       setError(result.message ?? 'Não foi possível entrar.');
       return false;
     }
-
-    setAuthenticatedUser({
-      id: cpf.replace(/\D/g, ''),
-      name: 'Usuário VetorRisco',
-    });
 
     return true;
   }
