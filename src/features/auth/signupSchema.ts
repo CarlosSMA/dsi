@@ -1,8 +1,7 @@
 import { z } from 'zod';
 
 import { isValidCpf } from './utils/cpf';
-
-const PASSWORD_REGEX = /^(?=.*[a-zA-Z])(?=.*\d)(?=.*[^a-zA-Z0-9]).{6,}$/;
+import { isValidPassword } from './utils/password';
 
 export const signupSchema = z
   .object({
@@ -15,7 +14,7 @@ export const signupSchema = z
     senha: z
       .string()
       .min(1, 'Informe a senha')
-      .regex(PASSWORD_REGEX, 'A senha precisa de letras, números e símbolos (mínimo 6 caracteres)'),
+      .refine(isValidPassword, 'A senha precisa de letras, números e símbolos (mínimo 6 caracteres)'),
     confirmarSenha: z.string().min(1, 'Confirme a senha'),
     tipo: z.enum(['cidadao', 'agente']),
     numeroMatricula: z.string().optional(),
