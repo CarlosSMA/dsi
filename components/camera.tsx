@@ -1,9 +1,11 @@
 import { AppColors } from "@/constants/theme";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
+import { useState } from "react";
 import { Alert, Pressable, View } from "react-native";
 import * as ImagePicker from 'expo-image-picker';
 import { styles } from "@/constants/style";
 import { useAuth } from "@/src/contexts/auth-context";
+import { registrarDenuncia } from "@/src/services/denuncia-service";
 
 interface Location {
   latitude: number;
@@ -13,7 +15,7 @@ interface Location {
 interface CameraProps {
   cameraType?: ImagePicker.CameraType;
   quality?: number;
-  location: Location;
+  location?: Location;
 }
 
 export function Camera({
@@ -34,7 +36,7 @@ export function Camera({
             cameraType,
             quality,
             location,
-            usuarioId: usuario!.id,
+            usuarioId: usuario?.id,
             isSubmitting,
             setIsSubmitting,
           })
@@ -45,6 +47,26 @@ export function Camera({
   )
 }
 
+interface HandleTakePhotoParams {
+  cameraType?: ImagePicker.CameraType;
+  quality?: number;
+  location?: Location;
+  usuarioId?: string;
+  isSubmitting: boolean;
+  setIsSubmitting: (isSubmitting: boolean) => void;
+}
+
+async function handleTakePhoto({
+  cameraType,
+  quality,
+  location,
+  usuarioId,
+  isSubmitting,
+  setIsSubmitting,
+}: HandleTakePhotoParams) {
+  if (isSubmitting) {
+    return;
+  }
 
   if (!location) {
     Alert.alert(
@@ -53,10 +75,19 @@ export function Camera({
     );
     return;
   }
+
+  setIsSubmitting(true);
+  try {
+    const result = await takePhoto(cameraType, quality);
+    if (!result || result.canceled) {
+      return;
+    }
+
     if (!usuarioId) {
       Alert.alert('Sessão necessária', 'Entre na sua conta para registrar uma ocorrência.');
       return;
     }
+
     await registrarDenuncia({
       id_denunciador: usuarioId,
       latitude: location.latitude,
@@ -82,7 +113,7 @@ async function takePhoto(
       'Permissão necessária',
       'Permita o acesso à câmera para registrar uma ocorrência.'
     );
-    return;
+    return null;
   }
 
   return ImagePicker.launchCameraAsync({
