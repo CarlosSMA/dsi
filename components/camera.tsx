@@ -45,6 +45,18 @@ export function Camera({
   )
 }
 
+
+  if (!location) {
+    Alert.alert(
+      'Localização necessária',
+      'Não foi possível obter sua localização para registrar a ocorrência.'
+    );
+    return;
+  }
+    if (!usuarioId) {
+      Alert.alert('Sessão necessária', 'Entre na sua conta para registrar uma ocorrência.');
+      return;
+    }
     await registrarDenuncia({
       id_denunciador: usuarioId,
       latitude: location.latitude,
