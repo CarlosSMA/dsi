@@ -1,11 +1,11 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { 
-  onAuthStateChanged, 
-  signInWithEmailAndPassword, 
-  createUserWithEmailAndPassword, 
-  signInAnonymously, 
-  signOut, 
-  User as FirebaseUser 
+import {
+  onAuthStateChanged,
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+  signInAnonymously,
+  signOut,
+  User as FirebaseUser
 } from 'firebase/auth';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { auth, db } from '../services/firebase';
@@ -27,40 +27,55 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [carregando, setCarregando] = useState<boolean>(true);
 
   useEffect(() => {
-    // Monitora a sessão do usuário em tempo real
-    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser: FirebaseUser | null) => {
-      try {
-        if (firebaseUser) {
-          const userDocRef = doc(db, 'usuarios', firebaseUser.uid);
-          const userDoc = await getDoc(userDocRef);
+    let unsubscribe: () => void = () => { };
 
-          if (userDoc.exists()) {
-            const data = userDoc.data();
-            setUsuario({
-              id: firebaseUser.uid,
-              nome: data.nome || 'Usuário',
-              email: firebaseUser.email || '',
-              role: data.role || 'cidadao',
-              cpf: data.cpf || '',
-              numero_matricula: data.numero_matricula || '',
-            });
-          } else {
-            setUsuario({
-              id: firebaseUser.uid,
-              nome: firebaseUser.isAnonymous ? 'Cidadão Anônimo' : (firebaseUser.displayName || 'Cidadão'),
-              email: firebaseUser.email || '',
-              role: 'cidadao',
-            });
-          }
-        } else {
-          setUsuario(null);
-        }
+    async function iniciarSessao() {
+      // Garante que o app sempre abra na tela de login,
+      // encerrando qualquer sessão persistida do Firebase.
+      try {
+        await signOut(auth);
       } catch (error) {
-        console.error('Erro ao recuperar sessão do usuário:', error);
-      } finally {
-        setCarregando(false);
+        console.error('Erro ao encerrar sessão anterior:', error);
       }
-    });
+
+      // Monitora a sessão do usuário em tempo real (a partir daqui)
+      unsubscribe = onAuthStateChanged(auth, async (firebaseUser: FirebaseUser | null) => {
+        setCarregando(true);
+        try {
+          if (firebaseUser) {
+            const userDocRef = doc(db, 'usuarios', firebaseUser.uid);
+            const userDoc = await getDoc(userDocRef);
+
+            if (userDoc.exists()) {
+              const data = userDoc.data();
+              setUsuario({
+                id: firebaseUser.uid,
+                nome: data.nome || 'Usuário',
+                email: firebaseUser.email || '',
+                role: data.role || 'cidadao',
+                cpf: data.cpf || '',
+                numero_matricula: data.numero_matricula || '',
+              });
+            } else {
+              setUsuario({
+                id: firebaseUser.uid,
+                nome: firebaseUser.isAnonymous ? 'Cidadão Anônimo' : (firebaseUser.displayName || 'Cidadão'),
+                email: firebaseUser.email || '',
+                role: 'cidadao',
+              });
+            }
+          } else {
+            setUsuario(null);
+          }
+        } catch (error) {
+          console.error('Erro ao recuperar sessão do usuário:', error);
+        } finally {
+          setCarregando(false);
+        }
+      });
+    }
+
+    iniciarSessao();
 
     return () => unsubscribe();
   }, []);

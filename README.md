@@ -10,7 +10,24 @@ This is an [Expo](https://expo.dev) project created with [`create-expo-app`](htt
    npm install
    ```
 
-2. Start the app
+2. Configure environment variables
+
+   Crie um arquivo `.env` na raiz do projeto baseado no `.env.example`:
+
+   ```bash
+   cp .env.example .env
+   ```
+
+   Preencha as variáveis `EXPO_PUBLIC_FIREBASE_*` com as credenciais do seu projeto Firebase.
+
+   > **Estrutura dos Usuários no Firestore (`usuarios/{uid}`):**
+   > Para que o login por CPF funcione, cada documento deve conter:
+   > - `cpf`: string (ex: `"12345678901"` ou formatado)
+   > - `email`: string (e-mail cadastrado no Firebase Auth)
+   > - `nome`: string
+   > - `role`: `'cidadao'` ou `'agente'`
+
+3. Start the app
 
    ```bash
    npx expo start
