@@ -1,4 +1,4 @@
-import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth';
+import { createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from 'firebase/auth';
 import { collection, doc, getDocs, query, setDoc, where } from 'firebase/firestore';
 
 import type { UserRole } from '@/src/types';
@@ -118,4 +118,8 @@ export async function registerUser({
     dataCriacao: new Date(),
     dataAtualizacao: new Date(),
   });
+
+  // Encerra a sessão criada automaticamente pelo cadastro para que o usuário
+  // precise entrar novamente na tela de login.
+  await signOut(auth);
 }
