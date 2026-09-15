@@ -155,7 +155,10 @@ export function LoginScreen() {
             <View style={styles.divider} />
           </View>
 
-          <Pressable accessibilityRole="button" onPress={() => undefined} style={styles.secondaryButton}>
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => router.push('/signup')}
+            style={styles.secondaryButton}>
             <MaterialIcons name="person-add-alt-1" size={19} color={colors.primary} />
             <Text style={styles.secondaryButtonText}>Criar nova conta</Text>
           </Pressable>
