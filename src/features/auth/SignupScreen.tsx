@@ -2,6 +2,8 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
+import { Controller, useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import {
   Pressable,
   SafeAreaView,
@@ -14,70 +16,42 @@ import {
 
 import { AppColors } from '@/constants/theme';
 
-import { formatCpf, isValidCpf } from './utils/cpf';
-
-type FormState = {
-  nome: string;
-  email: string;
-  cpf: string;
-  senha: string;
-  confirmarSenha: string;
-  tipo: 'cidadao' | 'agente';
-  numeroMatricula: string;
-};
-
-type FormErrors = Partial<Record<keyof FormState, string>>;
-
-const initialState: FormState = {
-  nome: '',
-  email: '',
-  cpf: '',
-  senha: '',
-  confirmarSenha: '',
-  tipo: 'cidadao',
-  numeroMatricula: '',
-};
-
-function validate(form: FormState): FormErrors {
-  const errors: FormErrors = {};
-
-  if (form.nome.trim().length < 3) errors.nome = 'Informe seu nome completo';
-  if (!form.email.includes('@')) errors.email = 'Informe um email válido';
-  if (!isValidCpf(form.cpf)) errors.cpf = 'Informe um CPF válido';
-  if (form.senha.length < 6) errors.senha = 'A senha precisa de no mínimo 6 caracteres';
-  if (form.confirmarSenha !== form.senha) errors.confirmarSenha = 'As senhas não são iguais';
-  if (form.tipo === 'agente' && !form.numeroMatricula.trim()) {
-    errors.numeroMatricula = 'Informe o número de matrícula';
-  }
-
-  return errors;
-}
+import { formatCpf } from './utils/cpf';
+import { signupSchema, type SignupFormData } from './signupSchema';
 
 export function SignupScreen() {
-  const [form, setForm] = useState<FormState>(initialState);
-  const [errors, setErrors] = useState<FormErrors>({});
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
   const [isConfirmVisible, setIsConfirmVisible] = useState(false);
   const router = useRouter();
+  const {
+    control,
+    handleSubmit: submitForm,
+    watch,
+    formState: { errors, isSubmitting },
+  } = useForm<SignupFormData>({
+    resolver: zodResolver(signupSchema),
+    defaultValues: {
+      nome: '',
+      email: '',
+      cpf: '',
+      senha: '',
+      confirmarSenha: '',
+      tipo: 'cidadao',
+      numeroMatricula: '',
+    },
+  });
 
-  const isCpfValid = isValidCpf(form.cpf);
-  const passwordsMismatch = Boolean(form.confirmarSenha) && form.senha !== form.confirmarSenha;
+  const tipo = watch('tipo');
+  const cpfValue = watch('cpf');
+  const senha = watch('senha');
+  const confirmarSenha = watch('confirmarSenha');
+  const isCpfValid = !errors.cpf && cpfValue?.replace(/\D/g, '').length === 11;
+  const passwordsMismatch = Boolean(confirmarSenha) && senha !== confirmarSenha;
 
-  function updateField<K extends keyof FormState>(field: K, value: FormState[K]) {
-    setForm((current) => ({ ...current, [field]: value }));
-  }
-
-  function onSubmit() {
-    const validationErrors = validate(form);
-    setErrors(validationErrors);
-
-    if (Object.keys(validationErrors).length > 0) {
-      return;
-    }
-
+  const onSubmit = (data: SignupFormData): void => {
     // TODO: integrar com o cadastro real no Firebase.
-    console.log('Cadastro (stub):', form);
-  }
+    console.log('Cadastro (stub):', data);
+  };
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -101,71 +75,98 @@ export function SignupScreen() {
         <View style={styles.card}>
           <Text style={styles.title}>Crie sua conta</Text>
 
-          <View style={styles.segmentedControl}>
-            <Pressable
-              accessibilityRole="button"
-              onPress={() => updateField('tipo', 'cidadao')}
-              style={[styles.segment, form.tipo === 'cidadao' && styles.segmentActive]}>
-              <Text style={[styles.segmentText, form.tipo === 'cidadao' && styles.segmentTextActive]}>
-                Usuário Normal
-              </Text>
-            </Pressable>
-            <Pressable
-              accessibilityRole="button"
-              onPress={() => updateField('tipo', 'agente')}
-              style={[styles.segment, form.tipo === 'agente' && styles.segmentActive]}>
-              <Text style={[styles.segmentText, form.tipo === 'agente' && styles.segmentTextActive]}>
-                Servidor Público
-              </Text>
-            </Pressable>
-          </View>
+          <Controller
+            control={control}
+            name="tipo"
+            render={({ field: { onChange, value } }) => (
+              <View style={styles.segmentedControl}>
+                <Pressable
+                  accessibilityRole="button"
+                  onPress={() => onChange('cidadao')}
+                  style={[styles.segment, value === 'cidadao' && styles.segmentActive]}>
+                  <Text style={[styles.segmentText, value === 'cidadao' && styles.segmentTextActive]}>
+                    Usuário Normal
+                  </Text>
+                </Pressable>
+                <Pressable
+                  accessibilityRole="button"
+                  onPress={() => onChange('agente')}
+                  style={[styles.segment, value === 'agente' && styles.segmentActive]}>
+                  <Text style={[styles.segmentText, value === 'agente' && styles.segmentTextActive]}>
+                    Servidor Público
+                  </Text>
+                </Pressable>
+              </View>
+            )}
+          />
 
           <View style={styles.form}>
             <View style={styles.fieldGroup}>
               <Text style={styles.fieldLabel}>Nome completo</Text>
               <View style={styles.inputWrapper}>
-                <TextInput
-                  value={form.nome}
-                  onChangeText={(value) => updateField('nome', value)}
-                  placeholder="José Maria dos Santos"
-                  placeholderTextColor={colors.placeholder}
-                  style={styles.input}
+                <Controller
+                  control={control}
+                  name="nome"
+                  render={({ field: { onChange, onBlur, value } }) => (
+                    <TextInput
+                      value={value}
+                      onBlur={onBlur}
+                      onChangeText={onChange}
+                      placeholder="José Maria dos Santos"
+                      placeholderTextColor={colors.placeholder}
+                      style={styles.input}
+                    />
+                  )}
                 />
               </View>
-              {errors.nome ? <Text style={styles.errorText}>{errors.nome}</Text> : null}
+              {errors.nome?.message ? <Text style={styles.errorText}>{errors.nome.message}</Text> : null}
             </View>
 
             <View style={styles.fieldGroup}>
               <Text style={styles.fieldLabel}>Email</Text>
               <View style={styles.inputWrapper}>
-                <TextInput
-                  value={form.email}
-                  onChangeText={(value) => updateField('email', value)}
-                  placeholder="josemaria@gmail.com"
-                  placeholderTextColor={colors.placeholder}
-                  keyboardType="email-address"
-                  autoCapitalize="none"
-                  style={styles.input}
+                <Controller
+                  control={control}
+                  name="email"
+                  render={({ field: { onChange, onBlur, value } }) => (
+                    <TextInput
+                      value={value}
+                      onBlur={onBlur}
+                      onChangeText={onChange}
+                      placeholder="josemaria@gmail.com"
+                      placeholderTextColor={colors.placeholder}
+                      keyboardType="email-address"
+                      autoCapitalize="none"
+                      style={styles.input}
+                    />
+                  )}
                 />
               </View>
-              {errors.email ? <Text style={styles.errorText}>{errors.email}</Text> : null}
+              {errors.email?.message ? <Text style={styles.errorText}>{errors.email.message}</Text> : null}
             </View>
 
-            {form.tipo === 'agente' ? (
+            {tipo === 'agente' ? (
               <View style={styles.fieldGroup}>
                 <Text style={styles.fieldLabel}>Número de matrícula</Text>
                 <View style={styles.inputWrapper}>
-                  <TextInput
-                    value={form.numeroMatricula}
-                    onChangeText={(value) => updateField('numeroMatricula', value)}
-                    placeholder="000000"
-                    placeholderTextColor={colors.placeholder}
-                    keyboardType="numeric"
-                    style={styles.input}
+                  <Controller
+                    control={control}
+                    name="numeroMatricula"
+                    render={({ field: { onChange, onBlur, value } }) => (
+                      <TextInput
+                        value={value}
+                        onBlur={onBlur}
+                        onChangeText={onChange}
+                        placeholder="000000"
+                        placeholderTextColor={colors.placeholder}
+                        keyboardType="numeric"
+                        style={styles.input}
+                      />
+                    )}
                   />
                 </View>
-                {errors.numeroMatricula ? (
-                  <Text style={styles.errorText}>{errors.numeroMatricula}</Text>
+                {errors.numeroMatricula?.message ? (
+                  <Text style={styles.errorText}>{errors.numeroMatricula.message}</Text>
                 ) : null}
               </View>
             ) : null}
@@ -176,29 +177,43 @@ export function SignupScreen() {
                 {isCpfValid ? <Text style={styles.validText}>cpf válido</Text> : null}
               </View>
               <View style={styles.inputWrapper}>
-                <TextInput
-                  value={form.cpf}
-                  onChangeText={(value) => updateField('cpf', formatCpf(value))}
-                  placeholder="000.000.000-00"
-                  placeholderTextColor={colors.placeholder}
-                  keyboardType="numeric"
-                  maxLength={14}
-                  style={styles.input}
+                <Controller
+                  control={control}
+                  name="cpf"
+                  render={({ field: { onChange, onBlur, value } }) => (
+                    <TextInput
+                      value={value}
+                      onBlur={onBlur}
+                      onChangeText={(inputValue) => onChange(formatCpf(inputValue))}
+                      placeholder="000.000.000-00"
+                      placeholderTextColor={colors.placeholder}
+                      keyboardType="numeric"
+                      maxLength={14}
+                      style={styles.input}
+                    />
+                  )}
                 />
               </View>
-              {errors.cpf ? <Text style={styles.errorText}>{errors.cpf}</Text> : null}
+              {errors.cpf?.message ? <Text style={styles.errorText}>{errors.cpf.message}</Text> : null}
             </View>
 
             <View style={styles.fieldGroup}>
               <Text style={styles.fieldLabel}>Criar senha</Text>
               <View style={[styles.inputWrapper, errors.senha && styles.inputWrapperError]}>
-                <TextInput
-                  value={form.senha}
-                  onChangeText={(value) => updateField('senha', value)}
-                  placeholder="••••••••••"
-                  placeholderTextColor={colors.placeholder}
-                  secureTextEntry={!isPasswordVisible}
-                  style={styles.input}
+                <Controller
+                  control={control}
+                  name="senha"
+                  render={({ field: { onChange, onBlur, value } }) => (
+                    <TextInput
+                      value={value}
+                      onBlur={onBlur}
+                      onChangeText={onChange}
+                      placeholder="••••••••••"
+                      placeholderTextColor={colors.placeholder}
+                      secureTextEntry={!isPasswordVisible}
+                      style={styles.input}
+                    />
+                  )}
                 />
                 <Pressable
                   accessibilityLabel={isPasswordVisible ? 'Ocultar senha' : 'Mostrar senha'}
@@ -212,7 +227,9 @@ export function SignupScreen() {
                   />
                 </Pressable>
               </View>
-              {errors.senha ? <Text style={styles.errorText}>{errors.senha}</Text> : null}
+              {errors.senha?.message ? <Text style={styles.errorText}>{errors.senha.message}</Text> : null}
+              <Text style={styles.helperText}>*Letras, números e símbolos</Text>
+              <Text style={styles.helperText}>*Mínimo de 6 caracteres</Text>
             </View>
 
             <View style={styles.fieldGroup}>
@@ -225,13 +242,20 @@ export function SignupScreen() {
                   styles.inputWrapper,
                   (errors.confirmarSenha || passwordsMismatch) && styles.inputWrapperError,
                 ]}>
-                <TextInput
-                  value={form.confirmarSenha}
-                  onChangeText={(value) => updateField('confirmarSenha', value)}
-                  placeholder="••••••••••"
-                  placeholderTextColor={colors.placeholder}
-                  secureTextEntry={!isConfirmVisible}
-                  style={styles.input}
+                <Controller
+                  control={control}
+                  name="confirmarSenha"
+                  render={({ field: { onChange, onBlur, value } }) => (
+                    <TextInput
+                      value={value}
+                      onBlur={onBlur}
+                      onChangeText={onChange}
+                      placeholder="••••••••••"
+                      placeholderTextColor={colors.placeholder}
+                      secureTextEntry={!isConfirmVisible}
+                      style={styles.input}
+                    />
+                  )}
                 />
                 <Pressable
                   accessibilityLabel={isConfirmVisible ? 'Ocultar senha' : 'Mostrar senha'}
@@ -245,12 +269,19 @@ export function SignupScreen() {
                   />
                 </Pressable>
               </View>
+              {errors.confirmarSenha?.message && !passwordsMismatch ? (
+                <Text style={styles.errorText}>{errors.confirmarSenha.message}</Text>
+              ) : null}
             </View>
           </View>
 
           <View style={styles.actions}>
-            <Pressable accessibilityRole="button" onPress={onSubmit} style={styles.primaryButton}>
-              <Text style={styles.primaryButtonText}>Cadastrar</Text>
+            <Pressable
+              accessibilityRole="button"
+              disabled={isSubmitting}
+              onPress={submitForm(onSubmit)}
+              style={[styles.primaryButton, isSubmitting && styles.primaryButtonDisabled]}>
+              <Text style={styles.primaryButtonText}>{isSubmitting ? 'Cadastrando...' : 'Cadastrar'}</Text>
             </Pressable>
 
             <Text style={styles.termsText}>
@@ -414,6 +445,11 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '600',
   },
+  helperText: {
+    color: AppColors.primaryText,
+    fontSize: 11,
+    fontWeight: '600',
+  },
   actions: {
     gap: 14,
     marginTop: 26,
@@ -426,6 +462,9 @@ const styles = StyleSheet.create({
     minHeight: 52,
     borderRadius: 26,
     backgroundColor: AppColors.securityBlue,
+  },
+  primaryButtonDisabled: {
+    opacity: 0.65,
   },
   primaryButtonText: {
     color: AppColors.surface,
