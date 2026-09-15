@@ -14,5 +14,5 @@ export default function IndexRoute() {
     );
   }
 
-  return <Redirect href={usuario ? '/(tabs)' : '/login'} />;
+  return <Redirect href={usuario ? '/map' : '/login'} />;
 }

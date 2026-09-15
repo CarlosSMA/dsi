@@ -5,10 +5,6 @@ import 'react-native-reanimated';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { AuthProvider } from '@/src/contexts/auth-context';
 
-export const unstable_settings = {
-  anchor: '(tabs)',
-};
-
 export default function RootLayout() {
   const colorScheme = useColorScheme();
 
@@ -17,7 +13,7 @@ export default function RootLayout() {
       <AuthProvider>
         <Stack>
           <Stack.Screen name="(auth)" options={{ headerShown: false }} />
-          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+          <Stack.Screen name="map" options={{ headerShown: false }} />
           <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
         </Stack>
       </AuthProvider>
