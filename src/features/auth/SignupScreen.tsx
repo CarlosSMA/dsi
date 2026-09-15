@@ -18,11 +18,13 @@ import { AppColors } from '@/constants/theme';
 
 import { formatCpf } from './utils/cpf';
 import { signupSchema, type SignupFormData } from './signupSchema';
+import { useSignup } from './useSignup';
 
 export function SignupScreen() {
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
   const [isConfirmVisible, setIsConfirmVisible] = useState(false);
   const router = useRouter();
+  const { error: signupError, handleSubmit } = useSignup();
   const {
     control,
     handleSubmit: submitForm,
@@ -48,9 +50,12 @@ export function SignupScreen() {
   const isCpfValid = !errors.cpf && cpfValue?.replace(/\D/g, '').length === 11;
   const passwordsMismatch = Boolean(confirmarSenha) && senha !== confirmarSenha;
 
-  const onSubmit = (data: SignupFormData): void => {
-    // TODO: integrar com o cadastro real no Firebase.
-    console.log('Cadastro (stub):', data);
+  const onSubmit = async (data: SignupFormData): Promise<void> => {
+    const success = await handleSubmit(data);
+
+    if (success) {
+      router.replace('/(tabs)');
+    }
   };
 
   return (
@@ -276,6 +281,7 @@ export function SignupScreen() {
           </View>
 
           <View style={styles.actions}>
+            {signupError ? <Text style={styles.formError}>{signupError}</Text> : null}
             <Pressable
               accessibilityRole="button"
               disabled={isSubmitting}
@@ -454,6 +460,11 @@ const styles = StyleSheet.create({
     gap: 14,
     marginTop: 26,
     alignItems: 'center',
+  },
+  formError: {
+    color: AppColors.highRisk,
+    fontSize: 13,
+    textAlign: 'center',
   },
   primaryButton: {
     width: '100%',
