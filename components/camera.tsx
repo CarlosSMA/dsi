@@ -20,6 +20,11 @@ export function Camera({
   quality,
   location,
 }: CameraProps) {
+      await registrarDenuncia({
+        id_denunciador: usuario.id,
+        latitude: location.latitude,
+        longitude: location.longitude,
+      });
   return (
     <View style={styles.cameraContainer}>
       <Pressable
@@ -31,6 +36,11 @@ export function Camera({
   )
 }
 
+    await registrarDenuncia({
+      id_denunciador: usuarioId,
+      latitude: location.latitude,
+      longitude: location.longitude,
+    });
 async function takePhoto(
   cameraType?: ImagePicker.CameraType.back | ImagePicker.CameraType.front,
   quality?: number
