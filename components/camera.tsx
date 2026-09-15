@@ -4,7 +4,22 @@ import { Alert, Pressable, View } from "react-native";
 import * as ImagePicker from 'expo-image-picker';
 import { styles } from "@/constants/style";
 
-export function Camera({ cameraType, quality }: {cameraType?: ImagePicker.CameraType, quality?: number}) {
+interface Location {
+  latitude: number;
+  longitude: number;
+}
+
+interface CameraProps {
+  cameraType?: ImagePicker.CameraType;
+  quality?: number;
+  location: Location;
+}
+
+export function Camera({
+  cameraType,
+  quality,
+  location,
+}: CameraProps) {
   return (
     <View style={styles.cameraContainer}>
       <Pressable
