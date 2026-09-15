@@ -1,24 +1,8 @@
 import { useState } from 'react';
 
+import { loginWithCpf, translateFirebaseError } from '@/src/services/auth-service';
+
 import type { LoginFormData } from './schema';
-
-type LoginResult = {
-  success: boolean;
-  message?: string;
-};
-
-async function loginMock(cpf: string, senha: string): Promise<LoginResult> {
-  await new Promise<void>((resolve) => setTimeout(resolve, 800));
-
-  if (senha === 'erro') {
-    return { success: false, message: 'CPF ou senha inválidos.' };
-  }
-
-  return {
-    success: true,
-    message: `Login mockado para ${cpf.replace(/\D/g, '')}`,
-  };
-}
 
 export function useLogin() {
   const [error, setError] = useState<string | null>(null);
@@ -26,14 +10,14 @@ export function useLogin() {
   async function handleSubmit({ cpf, senha }: LoginFormData): Promise<boolean> {
     setError(null);
 
-    const result = await loginMock(cpf, senha);
-
-    if (!result.success) {
-      setError(result.message ?? 'Não foi possível entrar.');
+    try {
+      await loginWithCpf(cpf, senha);
+      return true;
+    } catch (err) {
+      const errorMessage = translateFirebaseError(err);
+      setError(errorMessage);
       return false;
     }
-
-    return true;
   }
 
   return { error, handleSubmit };
