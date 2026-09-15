@@ -1,5 +1,7 @@
-import { signInWithEmailAndPassword } from 'firebase/auth';
-import { collection, getDocs, query, where } from 'firebase/firestore';
+import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth';
+import { collection, doc, getDocs, query, setDoc, where } from 'firebase/firestore';
+
+import type { UserRole } from '@/src/types';
 
 import { auth, db } from './firebase';
 
@@ -9,6 +11,15 @@ function formatCpf(value: string): string {
   const digits = value.replace(/\D/g, '').slice(0, CPF_LENGTH);
   if (digits.length !== CPF_LENGTH) return digits;
   return `${digits.slice(0, 3)}.${digits.slice(3, 6)}.${digits.slice(6, 9)}-${digits.slice(9)}`;
+}
+
+interface RegisterUserInput {
+  nome: string;
+  email: string;
+  cpf: string;
+  senha: string;
+  tipo: UserRole;
+  numeroMatricula?: string;
 }
 
 /**
@@ -30,6 +41,10 @@ export function translateFirebaseError(error: unknown): string {
         return 'Muitas tentativas consecutivas. Tente novamente mais tarde.';
       case 'auth/network-request-failed':
         return 'Falha de conexão. Verifique sua internet.';
+      case 'auth/email-already-in-use':
+        return 'Já existe uma conta cadastrada com este email.';
+      case 'auth/weak-password':
+        return 'A senha é muito fraca.';
       default:
         break;
     }
@@ -68,4 +83,39 @@ export async function loginWithCpf(cpf: string, senha: string): Promise<void> {
   }
 
   await signInWithEmailAndPassword(auth, email, senha);
+}
+
+/**
+ * Cadastra um novo usuário no Firebase Auth e cria seu documento em `usuarios` no Firestore.
+ */
+export async function registerUser({
+  nome,
+  email,
+  cpf,
+  senha,
+  tipo,
+  numeroMatricula,
+}: RegisterUserInput): Promise<void> {
+  const cleanCpf = cpf.replace(/\D/g, '');
+  const formattedCpf = formatCpf(cleanCpf);
+
+  const usersRef = collection(db, 'usuarios');
+  const cpfQuery = query(usersRef, where('cpf', 'in', [cleanCpf, formattedCpf]));
+  const existing = await getDocs(cpfQuery);
+
+  if (!existing.empty) {
+    throw new Error('Já existe uma conta cadastrada com este CPF.');
+  }
+
+  const credential = await createUserWithEmailAndPassword(auth, email, senha);
+
+  await setDoc(doc(db, 'usuarios', credential.user.uid), {
+    nome,
+    email,
+    cpf: formattedCpf,
+    role: tipo,
+    ...(tipo === 'agente' ? { numero_matricula: numeroMatricula } : {}),
+    dataCriacao: new Date(),
+    dataAtualizacao: new Date(),
+  });
 }
