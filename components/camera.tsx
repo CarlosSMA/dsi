@@ -22,25 +22,23 @@ export function Camera({
   location,
 }: CameraProps) {
   const { usuario } = useAuth();
-      const result = await takePhoto(cameraType, quality);
-      if (!result || result.canceled) {
-        return;
-      }
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-      if (!usuario) {
-        Alert.alert('Sessão necessária', 'Entre na sua conta para registrar uma ocorrência.');
-        return;
-      }
-      await registrarDenuncia({
-        id_denunciador: usuario.id,
-        latitude: location.latitude,
-        longitude: location.longitude,
-      });
   return (
     <View style={styles.cameraContainer}>
       <Pressable
         style={styles.cameraButton}
-        onPress={async () => takePhoto(cameraType, quality)}>
+        disabled={isSubmitting}
+        onPress={() =>
+          handleTakePhoto({
+            cameraType,
+            quality,
+            location,
+            usuarioId: usuario!.id,
+            isSubmitting,
+            setIsSubmitting,
+          })
+        }>
         <MaterialIcons name="photo-camera" size={30} color={AppColors.surface} />
       </Pressable>
     </View>
