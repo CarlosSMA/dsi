@@ -35,7 +35,7 @@ export function LoginScreen() {
 
   useEffect(() => {
     if (usuario) {
-      router.replace('/(tabs)');
+      router.replace('/map');
     }
   }, [usuario, router]);
 
@@ -43,7 +43,7 @@ export function LoginScreen() {
     const isAuthenticated = await handleSubmit(data);
 
     if (isAuthenticated) {
-      router.replace('/(tabs)');
+      router.replace('/map');
     }
   };
 
@@ -381,4 +381,3 @@ const styles = StyleSheet.create({
     fontSize: 10,
   },
 });
-
