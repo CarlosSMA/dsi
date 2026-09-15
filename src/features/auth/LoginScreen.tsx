@@ -1,7 +1,7 @@
 import { MaterialIcons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
@@ -14,6 +14,7 @@ import {
   View,
 } from 'react-native';
 
+import { useAuth } from '@/src/contexts/auth-context';
 import { formatCpf } from './utils/cpf';
 import { loginSchema, type LoginFormData } from './schema';
 import { useLogin } from './useLogin';
@@ -21,6 +22,7 @@ import { useLogin } from './useLogin';
 export function LoginScreen() {
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
   const router = useRouter();
+  const { usuario } = useAuth();
   const { error: loginError, handleSubmit } = useLogin();
   const {
     control,
@@ -30,6 +32,12 @@ export function LoginScreen() {
     resolver: zodResolver(loginSchema),
     defaultValues: { cpf: '', senha: '' },
   });
+
+  useEffect(() => {
+    if (usuario) {
+      router.replace('/(tabs)');
+    }
+  }, [usuario, router]);
 
   const onSubmit = async (data: LoginFormData): Promise<void> => {
     const isAuthenticated = await handleSubmit(data);
