@@ -54,7 +54,7 @@ export function SignupScreen() {
     const success = await handleSubmit(data);
 
     if (success) {
-      router.replace('/(tabs)');
+      router.replace('/signup-confirmation');
     }
   };
 
