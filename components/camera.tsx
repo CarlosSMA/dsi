@@ -3,25 +3,20 @@ import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { useState } from "react";
 import { Alert, Pressable, View } from "react-native";
 import * as ImagePicker from 'expo-image-picker';
+import * as Location from 'expo-location';
 import { styles } from "@/constants/style";
 import { useAuth } from "@/src/contexts/auth-context";
 import { registrarDenuncia } from "@/src/services/denuncia-service";
-
-interface Location {
-  latitude: number;
-  longitude: number;
-}
+import { Gps } from "@/src/lib/gps";
 
 interface CameraProps {
   cameraType?: ImagePicker.CameraType;
   quality?: number;
-  location?: Location;
 }
 
 export function Camera({
   cameraType,
   quality,
-  location,
 }: CameraProps) {
   const { usuario } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -35,7 +30,6 @@ export function Camera({
           handleTakePhoto({
             cameraType,
             quality,
-            location,
             usuarioId: usuario?.id,
             isSubmitting,
             setIsSubmitting,
@@ -50,7 +44,6 @@ export function Camera({
 interface HandleTakePhotoParams {
   cameraType?: ImagePicker.CameraType;
   quality?: number;
-  location?: Location;
   usuarioId?: string;
   isSubmitting: boolean;
   setIsSubmitting: (isSubmitting: boolean) => void;
@@ -59,7 +52,6 @@ interface HandleTakePhotoParams {
 async function handleTakePhoto({
   cameraType,
   quality,
-  location,
   usuarioId,
   isSubmitting,
   setIsSubmitting,
@@ -68,16 +60,13 @@ async function handleTakePhoto({
     return;
   }
 
-  if (!location) {
-    Alert.alert(
-      'Localização necessária',
-      'Não foi possível obter sua localização para registrar a ocorrência.'
-    );
-    return;
-  }
-
   setIsSubmitting(true);
   try {
+    const location = await Gps.getCurrentLocation();
+    if (!location) {
+      return;
+    }
+
     const result = await takePhoto(cameraType, quality);
     if (!result || result.canceled) {
       return;
