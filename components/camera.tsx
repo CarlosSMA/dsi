@@ -7,22 +7,16 @@ import * as Location from 'expo-location';
 import { styles } from "@/constants/style";
 import { useAuth } from "@/src/contexts/auth-context";
 import { registrarDenuncia } from "@/src/services/denuncia-service";
-
-interface Location {
-  latitude: number;
-  longitude: number;
-}
+import { Gps } from "@/src/lib/gps";
 
 interface CameraProps {
   cameraType?: ImagePicker.CameraType;
   quality?: number;
-  location?: Location;
 }
 
 export function Camera({
   cameraType,
   quality,
-  location,
 }: CameraProps) {
   const { usuario } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -36,7 +30,6 @@ export function Camera({
           handleTakePhoto({
             cameraType,
             quality,
-            location,
             usuarioId: usuario?.id,
             isSubmitting,
             setIsSubmitting,
@@ -51,7 +44,6 @@ export function Camera({
 interface HandleTakePhotoParams {
   cameraType?: ImagePicker.CameraType;
   quality?: number;
-  location?: Location;
   usuarioId?: string;
   isSubmitting: boolean;
   setIsSubmitting: (isSubmitting: boolean) => void;
@@ -60,7 +52,6 @@ interface HandleTakePhotoParams {
 async function handleTakePhoto({
   cameraType,
   quality,
-  location,
   usuarioId,
   isSubmitting,
   setIsSubmitting,
@@ -69,16 +60,13 @@ async function handleTakePhoto({
     return;
   }
 
-  if (!location) {
-    Alert.alert(
-      'Localização necessária',
-      'Não foi possível obter sua localização para registrar a ocorrência.'
-    );
-    return;
-  }
-
   setIsSubmitting(true);
   try {
+    const location = await Gps.getCurrentLocation();
+    if (!location) {
+      return;
+    }
+
     const result = await takePhoto(cameraType, quality);
     if (!result || result.canceled) {
       return;
@@ -100,30 +88,6 @@ async function handleTakePhoto({
     Alert.alert('Erro', 'Não foi possível registrar a ocorrência. Tente novamente.');
   } finally {
     setIsSubmitting(false);
-  }
-}
-
-async function getCurrentLocation() {
-  const permission = await Location.requestForegroundPermissionsAsync();
-
-  if (!permission.granted) {
-    Alert.alert(
-      'Localização necessária',
-      'Permita o acesso à localização para registrar uma ocorrência com suas coordenadas.'
-    );
-    return null;
-  }
-
-  try {
-    const currentLocation = await Location.getCurrentPositionAsync({});
-    return currentLocation.coords;
-  } catch (error) {
-    console.error('Erro ao obter localização:', error);
-    Alert.alert(
-      'Localização indisponível',
-      'Não foi possível obter sua localização. Verifique se o GPS está ativado e tente novamente.'
-    );
-    return null;
   }
 }
 
