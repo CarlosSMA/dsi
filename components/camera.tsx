@@ -3,6 +3,7 @@ import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { useState } from "react";
 import { Alert, Pressable, View } from "react-native";
 import * as ImagePicker from 'expo-image-picker';
+import * as Location from 'expo-location';
 import { styles } from "@/constants/style";
 import { useAuth } from "@/src/contexts/auth-context";
 import { registrarDenuncia } from "@/src/services/denuncia-service";
@@ -99,6 +100,30 @@ async function handleTakePhoto({
     Alert.alert('Erro', 'Não foi possível registrar a ocorrência. Tente novamente.');
   } finally {
     setIsSubmitting(false);
+  }
+}
+
+async function getCurrentLocation() {
+  const permission = await Location.requestForegroundPermissionsAsync();
+
+  if (!permission.granted) {
+    Alert.alert(
+      'Localização necessária',
+      'Permita o acesso à localização para registrar uma ocorrência com suas coordenadas.'
+    );
+    return null;
+  }
+
+  try {
+    const currentLocation = await Location.getCurrentPositionAsync({});
+    return currentLocation.coords;
+  } catch (error) {
+    console.error('Erro ao obter localização:', error);
+    Alert.alert(
+      'Localização indisponível',
+      'Não foi possível obter sua localização. Verifique se o GPS está ativado e tente novamente.'
+    );
+    return null;
   }
 }
 
