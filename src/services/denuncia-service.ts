@@ -1,23 +1,16 @@
-import { collection, addDoc, serverTimestamp, GeoPoint } from 'firebase/firestore';
+import { addDoc, collection, GeoPoint, serverTimestamp } from 'firebase/firestore';
 import { db } from './firebase';
 
 interface CriarDenunciaParams {
   id_denunciador: string;
-  urlFoto: string;
-  bairro?: string;
-  latitude?: number;
-  longitude?: number;
+  latitude: number;
+  longitude: number;
 }
 
-/**
- * Registra uma denúncia no Firestore amarrando a foto ao id_denunciador da sessão.
- */
 export async function registrarDenuncia({
   id_denunciador,
-  urlFoto,
-  bairro = 'Recife',
-  latitude = -8.0476,
-  longitude = -34.8770,
+  latitude,
+  longitude,
 }: CriarDenunciaParams): Promise<string> {
   if (!id_denunciador) {
     throw new Error('Não é possível registrar denúncia sem id_denunciador (usuário não autenticado).');
@@ -25,11 +18,10 @@ export async function registrarDenuncia({
 
   const docRef = await addDoc(collection(db, 'denuncias'), {
     id_denunciador,
-    urlFoto,
-    bairro,
     localizacao: new GeoPoint(latitude, longitude),
     statusDenuncia: 'pendente',
     dataCriacao: serverTimestamp(),
+    dataAtualizacao: serverTimestamp(),
   });
 
   return docRef.id;
