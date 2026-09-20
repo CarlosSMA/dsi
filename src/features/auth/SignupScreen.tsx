@@ -23,6 +23,7 @@ import { useSignup } from './useSignup';
 export function SignupScreen() {
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
   const [isConfirmVisible, setIsConfirmVisible] = useState(false);
+  const [focusedField, setFocusedField] = useState<string | null>(null);
   const router = useRouter();
   const { error: signupError, handleSubmit } = useSignup();
   const {
@@ -108,14 +109,23 @@ export function SignupScreen() {
           <View style={styles.form}>
             <View style={styles.fieldGroup}>
               <Text style={styles.fieldLabel}>Nome completo</Text>
-              <View style={styles.inputWrapper}>
+              <View
+                style={[
+                  styles.inputWrapper,
+                  focusedField === 'nome' && styles.inputWrapperFocused,
+                  errors.nome && styles.inputWrapperError,
+                ]}>
                 <Controller
                   control={control}
                   name="nome"
                   render={({ field: { onChange, onBlur, value } }) => (
                     <TextInput
                       value={value}
-                      onBlur={onBlur}
+                      onFocus={() => setFocusedField('nome')}
+                      onBlur={() => {
+                        onBlur();
+                        setFocusedField(null);
+                      }}
                       onChangeText={onChange}
                       placeholder="José Maria dos Santos"
                       placeholderTextColor={colors.placeholder}
@@ -129,14 +139,23 @@ export function SignupScreen() {
 
             <View style={styles.fieldGroup}>
               <Text style={styles.fieldLabel}>Email</Text>
-              <View style={styles.inputWrapper}>
+              <View
+                style={[
+                  styles.inputWrapper,
+                  focusedField === 'email' && styles.inputWrapperFocused,
+                  errors.email && styles.inputWrapperError,
+                ]}>
                 <Controller
                   control={control}
                   name="email"
                   render={({ field: { onChange, onBlur, value } }) => (
                     <TextInput
                       value={value}
-                      onBlur={onBlur}
+                      onFocus={() => setFocusedField('email')}
+                      onBlur={() => {
+                        onBlur();
+                        setFocusedField(null);
+                      }}
                       onChangeText={onChange}
                       placeholder="josemaria@gmail.com"
                       placeholderTextColor={colors.placeholder}
@@ -153,14 +172,23 @@ export function SignupScreen() {
             {tipo === 'agente' ? (
               <View style={styles.fieldGroup}>
                 <Text style={styles.fieldLabel}>Número de matrícula</Text>
-                <View style={styles.inputWrapper}>
+                <View
+                  style={[
+                    styles.inputWrapper,
+                    focusedField === 'numeroMatricula' && styles.inputWrapperFocused,
+                    errors.numeroMatricula && styles.inputWrapperError,
+                  ]}>
                   <Controller
                     control={control}
                     name="numeroMatricula"
                     render={({ field: { onChange, onBlur, value } }) => (
                       <TextInput
                         value={value}
-                        onBlur={onBlur}
+                        onFocus={() => setFocusedField('numeroMatricula')}
+                        onBlur={() => {
+                          onBlur();
+                          setFocusedField(null);
+                        }}
                         onChangeText={onChange}
                         placeholder="000000"
                         placeholderTextColor={colors.placeholder}
@@ -181,14 +209,23 @@ export function SignupScreen() {
                 <Text style={styles.fieldLabel}>CPF</Text>
                 {isCpfValid ? <Text style={styles.validText}>cpf válido</Text> : null}
               </View>
-              <View style={styles.inputWrapper}>
+              <View
+                style={[
+                  styles.inputWrapper,
+                  focusedField === 'cpf' && styles.inputWrapperFocused,
+                  errors.cpf && styles.inputWrapperError,
+                ]}>
                 <Controller
                   control={control}
                   name="cpf"
                   render={({ field: { onChange, onBlur, value } }) => (
                     <TextInput
                       value={value}
-                      onBlur={onBlur}
+                      onFocus={() => setFocusedField('cpf')}
+                      onBlur={() => {
+                        onBlur();
+                        setFocusedField(null);
+                      }}
                       onChangeText={(inputValue) => onChange(formatCpf(inputValue))}
                       placeholder="000.000.000-00"
                       placeholderTextColor={colors.placeholder}
@@ -204,14 +241,23 @@ export function SignupScreen() {
 
             <View style={styles.fieldGroup}>
               <Text style={styles.fieldLabel}>Criar senha</Text>
-              <View style={[styles.inputWrapper, errors.senha && styles.inputWrapperError]}>
+              <View
+                style={[
+                  styles.inputWrapper,
+                  focusedField === 'senha' && styles.inputWrapperFocused,
+                  errors.senha && styles.inputWrapperError,
+                ]}>
                 <Controller
                   control={control}
                   name="senha"
                   render={({ field: { onChange, onBlur, value } }) => (
                     <TextInput
                       value={value}
-                      onBlur={onBlur}
+                      onFocus={() => setFocusedField('senha')}
+                      onBlur={() => {
+                        onBlur();
+                        setFocusedField(null);
+                      }}
                       onChangeText={onChange}
                       placeholder="••••••••••"
                       placeholderTextColor={colors.placeholder}
@@ -245,6 +291,7 @@ export function SignupScreen() {
               <View
                 style={[
                   styles.inputWrapper,
+                  focusedField === 'confirmarSenha' && styles.inputWrapperFocused,
                   (errors.confirmarSenha || passwordsMismatch) && styles.inputWrapperError,
                 ]}>
                 <Controller
@@ -253,7 +300,11 @@ export function SignupScreen() {
                   render={({ field: { onChange, onBlur, value } }) => (
                     <TextInput
                       value={value}
-                      onBlur={onBlur}
+                      onFocus={() => setFocusedField('confirmarSenha')}
+                      onBlur={() => {
+                        onBlur();
+                        setFocusedField(null);
+                      }}
                       onChangeText={onChange}
                       placeholder="••••••••••"
                       placeholderTextColor={colors.placeholder}
@@ -371,10 +422,11 @@ const styles = StyleSheet.create({
   },
   title: {
     color: AppColors.primaryText,
-    fontSize: 22,
-    fontWeight: '800',
+    fontSize: 20,
+    fontWeight: '700',
     textAlign: 'center',
     marginBottom: 20,
+    letterSpacing: -0.2,
   },
   segmentedControl: {
     flexDirection: 'row',
@@ -417,21 +469,25 @@ const styles = StyleSheet.create({
   fieldLabel: {
     color: AppColors.primaryText,
     fontSize: 14,
-    fontWeight: '700',
+    fontWeight: '600',
   },
   validText: {
     color: AppColors.safe,
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: '600',
   },
   inputWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
-    minHeight: 40,
+    minHeight: 44,
     borderWidth: 1,
     borderColor: 'transparent',
     borderBottomWidth: 1,
     borderBottomColor: AppColors.inactive,
+  },
+  inputWrapperFocused: {
+    borderBottomWidth: 1.5,
+    borderBottomColor: AppColors.actionBlue,
   },
   inputWrapperError: {
     borderWidth: 1,
@@ -441,20 +497,22 @@ const styles = StyleSheet.create({
   },
   input: {
     flex: 1,
-    minHeight: 38,
-    paddingVertical: 0,
+    minHeight: 44,
+    paddingVertical: 2,
     color: AppColors.primaryText,
-    fontSize: 14,
+    fontSize: 16,
+    fontWeight: '500',
   },
   errorText: {
     color: AppColors.highRisk,
     fontSize: 12,
-    fontWeight: '600',
+    fontWeight: '500',
   },
   helperText: {
     color: AppColors.secondaryText,
-    fontSize: 11,
-    fontWeight: '500',
+    fontSize: 12,
+    fontWeight: '400',
+    lineHeight: 18,
   },
   actions: {
     gap: 14,
@@ -470,7 +528,7 @@ const styles = StyleSheet.create({
     width: '100%',
     alignItems: 'center',
     justifyContent: 'center',
-    minHeight: 52,
+    minHeight: 50,
     borderRadius: 26,
     backgroundColor: AppColors.actionBlue,
   },
@@ -480,23 +538,22 @@ const styles = StyleSheet.create({
   primaryButtonText: {
     color: AppColors.surface,
     fontSize: 16,
-    fontWeight: '700',
+    fontWeight: '600',
   },
   termsText: {
     color: AppColors.secondaryText,
-    fontSize: 11,
+    fontSize: 12,
     textAlign: 'center',
-    lineHeight: 16,
+    lineHeight: 18,
   },
   termsHighlight: {
     color: AppColors.actionBlue,
-    fontWeight: '700',
+    fontWeight: '600',
     textDecorationLine: 'underline',
   },
   loginLink: {
     color: AppColors.actionBlue,
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: '600',
-    textDecorationLine: 'underline',
   },
 });
