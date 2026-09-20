@@ -307,8 +307,8 @@ export function SignupScreen() {
 }
 
 const colors = {
-  placeholder: '#A1A9B5',
-  icon: '#7C8798',
+  placeholder: '#94A3B8',
+  icon: '#64748B',
 };
 
 const styles = StyleSheet.create({
@@ -443,7 +443,7 @@ const styles = StyleSheet.create({
     flex: 1,
     minHeight: 38,
     paddingVertical: 0,
-    color: AppColors.secondaryText,
+    color: AppColors.primaryText,
     fontSize: 14,
   },
   errorText: {
@@ -452,9 +452,9 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   helperText: {
-    color: AppColors.primaryText,
+    color: AppColors.secondaryText,
     fontSize: 11,
-    fontWeight: '600',
+    fontWeight: '500',
   },
   actions: {
     gap: 14,
@@ -472,7 +472,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     minHeight: 52,
     borderRadius: 26,
-    backgroundColor: AppColors.securityBlue,
+    backgroundColor: AppColors.actionBlue,
   },
   primaryButtonDisabled: {
     opacity: 0.65,
@@ -489,12 +489,12 @@ const styles = StyleSheet.create({
     lineHeight: 16,
   },
   termsHighlight: {
-    color: AppColors.primaryText,
+    color: AppColors.actionBlue,
     fontWeight: '700',
     textDecorationLine: 'underline',
   },
   loginLink: {
-    color: AppColors.primaryText,
+    color: AppColors.actionBlue,
     fontSize: 13,
     fontWeight: '600',
     textDecorationLine: 'underline',
