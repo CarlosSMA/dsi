@@ -89,16 +89,18 @@ export function SignupScreen() {
                 <Pressable
                   accessibilityRole="button"
                   onPress={() => onChange('cidadao')}
-                  style={[styles.segment, value === 'cidadao' && styles.segmentActive]}>
-                  <Text style={[styles.segmentText, value === 'cidadao' && styles.segmentTextActive]}>
+                  style={[styles.segment, value === 'cidadao' && styles.segmentCidadaoActive]}>
+                  <Text
+                    style={[styles.segmentText, value === 'cidadao' && styles.segmentCidadaoTextActive]}>
                     Usuário Normal
                   </Text>
                 </Pressable>
                 <Pressable
                   accessibilityRole="button"
                   onPress={() => onChange('agente')}
-                  style={[styles.segment, value === 'agente' && styles.segmentActive]}>
-                  <Text style={[styles.segmentText, value === 'agente' && styles.segmentTextActive]}>
+                  style={[styles.segment, value === 'agente' && styles.segmentAgenteActive]}>
+                  <Text
+                    style={[styles.segmentText, value === 'agente' && styles.segmentAgenteTextActive]}>
                     Servidor Público
                   </Text>
                 </Pressable>
@@ -443,17 +445,24 @@ const styles = StyleSheet.create({
     borderColor: AppColors.inactive,
     backgroundColor: AppColors.surface,
   },
-  segmentActive: {
+  segmentCidadaoActive: {
     borderColor: AppColors.safe,
-    backgroundColor: AppColors.safe,
+    backgroundColor: '#ECFDF5',
+  },
+  segmentCidadaoTextActive: {
+    color: '#059669',
+  },
+  segmentAgenteActive: {
+    borderColor: AppColors.actionBlue,
+    backgroundColor: '#EFF6FF',
+  },
+  segmentAgenteTextActive: {
+    color: AppColors.actionBlue,
   },
   segmentText: {
     color: AppColors.secondaryText,
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: '600',
-  },
-  segmentTextActive: {
-    color: AppColors.surface,
   },
   form: {
     gap: 18,

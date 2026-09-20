@@ -108,8 +108,9 @@ const styles = StyleSheet.create({
   },
   title: {
     color: AppColors.primaryText,
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: '700',
+    letterSpacing: -0.2,
   },
   checkCircle: {
     alignItems: 'center',
@@ -123,13 +124,13 @@ const styles = StyleSheet.create({
     width: '100%',
     alignItems: 'center',
     justifyContent: 'center',
-    minHeight: 52,
+    minHeight: 50,
     borderRadius: 26,
-    backgroundColor: AppColors.safe,
+    backgroundColor: AppColors.actionBlue,
   },
   continueButtonText: {
-    color: AppColors.primaryText,
+    color: AppColors.surface,
     fontSize: 16,
-    fontWeight: '700',
+    fontWeight: '600',
   },
 });
