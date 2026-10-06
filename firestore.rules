@@ -1,0 +1,188 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ===============================================================
+    // Assumed Data Model & Schema Definition
+    // ===============================================================
+    //
+    // Collection: usuarios/{userId}
+    // Document ID: Firebase Auth UID ({userId})
+    // Fields:
+    //   - id: string (required, immutable, matches {userId})
+    //   - nome: string (required, 2-100 chars)
+    //   - email: string (required, valid email format)
+    //   - cpf: string (required, 11-14 chars, immutable)
+    //   - role: string (required, 'cidadao' | 'agente', immutable by citizen)
+    //   - numero_matricula: string (optional, 1-30 chars, for municipal agents)
+    //   - dataCriacao: timestamp (required, immutable)
+    //   - dataAtualizacao: timestamp (required, recent)
+    //
+    // Collection: denuncias/{denunciaId}
+    // Document ID: Auto-generated or custom UID
+    // Fields:
+    //   - id: string (required, immutable)
+    //   - id_denunciador: string (required, immutable, matches request.auth.uid)
+    //   - id_revisor: string (optional on create, required upon agent review)
+    //   - urlFoto: string (required/optional, valid URL format, max 500 chars)
+    //   - statusDenuncia: string (required, 'pendente' | 'em_analise' | 'confirmada' | 'descartada')
+    //   - localizacao: latlng (required, geopoint coordinates)
+    //   - bairro: string (required, 2-100 chars)
+    //   - dataCriacao: timestamp (required, immutable, request.time)
+    //
+    // ===============================================================
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+
+    // Verifica se a requisicao e de um usuario autenticado no Firebase Auth
+    function isAuthenticated() {
+      return request.auth != null && request.auth.uid != null;
+    }
+
+    // Verifica se o usuario autenticado e o dono do recurso pelo ID do documento
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    // Obtem os dados do perfil do usuario autenticado
+    function getUserData() {
+      return get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data;
+    }
+
+    // Verifica se o usuario possui a role de Agente Municipal (via documento ou Custom Claims)
+    function isAgente() {
+      return isAuthenticated() && (
+        (request.auth.token.role == 'agente') ||
+        (exists(/databases/$(database)/documents/usuarios/$(request.auth.uid)) &&
+         getUserData().role == 'agente')
+      );
+    }
+
+    // Validacao de formato de e-mail
+    function isValidEmail(email) {
+      return email is string &&
+        email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$");
+    }
+
+    // Validacao de URL
+    function isValidUrl(url) {
+      return url is string &&
+        (url.matches("^https://.*") || url.matches("^http://.*")) &&
+        url.size() <= 500;
+    }
+
+    // Validacao de campos imutaveis em updates
+    function areImmutableFieldsUnchanged(fields) {
+      return !request.resource.data.diff(resource.data).affectedKeys().hasAny(fields);
+    }
+
+    // ===============================================================
+    // Domain Validators: Colecao usuarios
+    // ===============================================================
+
+    function isValidUser(data) {
+      let allowedFields = ['id', 'nome', 'email', 'cpf', 'role', 'numero_matricula', 'dataCriacao', 'dataAtualizacao'];
+      return data.keys().hasOnly(allowedFields) &&
+        data.id is string && data.id.size() > 0 && data.id.size() <= 128 &&
+        data.nome is string && data.nome.size() >= 2 && data.nome.size() <= 100 &&
+        data.email is string && isValidEmail(data.email) && data.email.size() <= 120 &&
+        data.cpf is string && data.cpf.size() >= 11 && data.cpf.size() <= 14 &&
+        data.role in ['cidadao', 'agente'] &&
+        (!('numero_matricula' in data) || (data.numero_matricula is string && data.numero_matricula.size() <= 30)) &&
+        data.dataCriacao is timestamp &&
+        data.dataAtualizacao is timestamp;
+    }
+
+    // ===============================================================
+    // Domain Validators: Colecao denuncias
+    // ===============================================================
+
+    function isValidDenunciaCreate(data) {
+      let allowedFields = ['id', 'id_denunciador', 'id_revisor', 'urlFoto', 'statusDenuncia', 'localizacao', 'bairro', 'dataCriacao'];
+      return data.keys().hasOnly(allowedFields) &&
+        data.id is string && data.id.size() > 0 && data.id.size() <= 128 &&
+        data.id_denunciador == request.auth.uid &&
+        (!('id_revisor' in data) || data.id_revisor == null || data.id_revisor == '') &&
+        (!('urlFoto' in data) || isValidUrl(data.urlFoto)) &&
+        data.statusDenuncia == 'pendente' &&
+        data.localizacao is latlng &&
+        data.bairro is string && data.bairro.size() >= 2 && data.bairro.size() <= 100 &&
+        data.dataCriacao == request.time;
+    }
+
+    function isValidDenunciaUpdate(data) {
+      let allowedFields = ['id', 'id_denunciador', 'id_revisor', 'urlFoto', 'statusDenuncia', 'localizacao', 'bairro', 'dataCriacao'];
+      let validStatuses = ['pendente', 'em_analise', 'confirmada', 'descartada'];
+      return data.keys().hasOnly(allowedFields) &&
+        data.statusDenuncia in validStatuses &&
+        data.id_revisor == request.auth.uid &&
+        (!('urlFoto' in data) || isValidUrl(data.urlFoto)) &&
+        data.bairro is string && data.bairro.size() >= 2 && data.bairro.size() <= 100;
+    }
+
+    // Transicao de status permitida na esteira de auditoria do Agente
+    function isValidStatusTransition() {
+      let prev = resource.data.statusDenuncia;
+      let next = request.resource.data.statusDenuncia;
+      return (prev == next) ||
+             (prev == 'pendente' && next in ['em_analise', 'confirmada', 'descartada']) ||
+             (prev == 'em_analise' && next in ['confirmada', 'descartada']) ||
+             (prev in ['confirmada', 'descartada'] && next in ['confirmada', 'descartada', 'em_analise']);
+    }
+
+    // ===============================================================
+    // Rules Definition
+    // ===============================================================
+
+    // Default Deny Root
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Colecao: usuarios
+    match /usuarios/{userId} {
+      // Leitura: Restrita ao proprio dono (protecao LGPD/CPF) ou Agentes Municipais autenticados
+      allow read: if isOwner(userId) || isAgente();
+
+      // Criacao: Usuario autenticado criando seu proprio documento inicial (papel padrao: cidadao, a nao ser que claim agente)
+      allow create: if isOwner(userId) &&
+        request.resource.data.id == userId &&
+        (request.resource.data.role == 'cidadao' || request.auth.token.role == 'agente') &&
+        request.resource.data.dataCriacao == request.time &&
+        isValidUser(request.resource.data);
+
+      // Atualizacao: Usuario autenticado atualizando seus proprios dados
+      // Nao permite alteracao de id, cpf, dataCriacao ou auto-elevacao de role
+      allow update: if isOwner(userId) &&
+        isValidUser(request.resource.data) &&
+        areImmutableFieldsUnchanged(['id', 'cpf', 'role', 'dataCriacao']) &&
+        request.resource.data.dataAtualizacao == request.time;
+
+      // Delecao: Bloqueada por padrao para manutencao de integridade referencial e auditoria
+      allow delete: if false;
+    }
+
+    // Colecao: denuncias
+    match /denuncias/{denunciaId} {
+      // Leitura: Aberta a todos os usuarios autenticados para plotagem e consulta no mapa
+      allow read: if isAuthenticated();
+
+      // Criacao: Cidadao ou Agente autenticado registra nova denuncia vinculada ao seu UID
+      allow create: if isAuthenticated() &&
+        request.resource.data.id == denunciaId &&
+        isValidDenunciaCreate(request.resource.data);
+
+      // Atualizacao: Exclusiva para Agentes Municipais revisarem denuncias
+      // Garante integridade dos dados originais (denunciador, dataCriacao, localizacao)
+      allow update: if isAgente() &&
+        isValidDenunciaUpdate(request.resource.data) &&
+        isValidStatusTransition() &&
+        areImmutableFieldsUnchanged(['id', 'id_denunciador', 'dataCriacao', 'localizacao']);
+
+      // Delecao: Bloqueada para garantir historico, transparencia e auditoria epidemiologica
+      allow delete: if false;
+    }
+  }
+}
