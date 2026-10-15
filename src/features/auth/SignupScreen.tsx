@@ -2,7 +2,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { Controller, useForm } from 'react-hook-form';
+import { Controller, useForm, type FieldErrors } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
   Pressable,
@@ -14,6 +14,7 @@ import {
   View,
 } from 'react-native';
 
+import { AppAlert } from '@/components/app-alert';
 import { AppColors } from '@/constants/theme';
 
 import { formatCpf } from './utils/cpf';
@@ -24,6 +25,7 @@ export function SignupScreen() {
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
   const [isConfirmVisible, setIsConfirmVisible] = useState(false);
   const [focusedField, setFocusedField] = useState<string | null>(null);
+  const [validationMessages, setValidationMessages] = useState<string[]>([]);
   const router = useRouter();
   const { error: signupError, handleSubmit } = useSignup();
   const {
@@ -50,6 +52,14 @@ export function SignupScreen() {
   const confirmarSenha = watch('confirmarSenha');
   const isCpfValid = !errors.cpf && cpfValue?.replace(/\D/g, '').length === 11;
   const passwordsMismatch = Boolean(confirmarSenha) && senha !== confirmarSenha;
+
+  const onInvalid = (formErrors: FieldErrors<SignupFormData>): void => {
+    const messages = fieldOrder
+      .map((field) => formErrors[field]?.message)
+      .filter((message): message is string => Boolean(message));
+
+    setValidationMessages(messages);
+  };
 
   const onSubmit = async (data: SignupFormData): Promise<void> => {
     const success = await handleSubmit(data);
@@ -136,7 +146,6 @@ export function SignupScreen() {
                   )}
                 />
               </View>
-              {errors.nome?.message ? <Text style={styles.errorText}>{errors.nome.message}</Text> : null}
             </View>
 
             <View style={styles.fieldGroup}>
@@ -168,7 +177,6 @@ export function SignupScreen() {
                   )}
                 />
               </View>
-              {errors.email?.message ? <Text style={styles.errorText}>{errors.email.message}</Text> : null}
             </View>
 
             {tipo === 'agente' ? (
@@ -200,9 +208,6 @@ export function SignupScreen() {
                     )}
                   />
                 </View>
-                {errors.numeroMatricula?.message ? (
-                  <Text style={styles.errorText}>{errors.numeroMatricula.message}</Text>
-                ) : null}
               </View>
             ) : null}
 
@@ -238,7 +243,6 @@ export function SignupScreen() {
                   )}
                 />
               </View>
-              {errors.cpf?.message ? <Text style={styles.errorText}>{errors.cpf.message}</Text> : null}
             </View>
 
             <View style={styles.fieldGroup}>
@@ -280,16 +284,12 @@ export function SignupScreen() {
                   />
                 </Pressable>
               </View>
-              {errors.senha?.message ? <Text style={styles.errorText}>{errors.senha.message}</Text> : null}
               <Text style={styles.helperText}>*Letras, números e símbolos</Text>
               <Text style={styles.helperText}>*Mínimo de 6 caracteres</Text>
             </View>
 
             <View style={styles.fieldGroup}>
-              <View style={styles.labelRow}>
-                <Text style={styles.fieldLabel}>Confirmar senha</Text>
-                {passwordsMismatch ? <Text style={styles.errorText}>as senhas não são iguais</Text> : null}
-              </View>
+              <Text style={styles.fieldLabel}>Confirmar senha</Text>
               <View
                 style={[
                   styles.inputWrapper,
@@ -327,9 +327,6 @@ export function SignupScreen() {
                   />
                 </Pressable>
               </View>
-              {errors.confirmarSenha?.message && !passwordsMismatch ? (
-                <Text style={styles.errorText}>{errors.confirmarSenha.message}</Text>
-              ) : null}
             </View>
           </View>
 
@@ -338,7 +335,7 @@ export function SignupScreen() {
             <Pressable
               accessibilityRole="button"
               disabled={isSubmitting}
-              onPress={submitForm(onSubmit)}
+              onPress={submitForm(onSubmit, onInvalid)}
               style={[styles.primaryButton, isSubmitting && styles.primaryButtonDisabled]}>
               <Text style={styles.primaryButtonText}>{isSubmitting ? 'Cadastrando...' : 'Cadastrar'}</Text>
             </Pressable>
@@ -355,9 +352,25 @@ export function SignupScreen() {
           </View>
         </View>
       </ScrollView>
+
+      <AppAlert
+        visible={validationMessages.length > 0}
+        title="Verifique os dados do cadastro"
+        messages={validationMessages}
+        onClose={() => setValidationMessages([])}
+      />
     </SafeAreaView>
   );
 }
+
+const fieldOrder: (keyof SignupFormData)[] = [
+  'nome',
+  'email',
+  'numeroMatricula',
+  'cpf',
+  'senha',
+  'confirmarSenha',
+];
 
 const colors = {
   placeholder: '#94A3B8',
@@ -510,11 +523,6 @@ const styles = StyleSheet.create({
     paddingVertical: 2,
     color: AppColors.primaryText,
     fontSize: 16,
-    fontWeight: '500',
-  },
-  errorText: {
-    color: AppColors.highRisk,
-    fontSize: 12,
     fontWeight: '500',
   },
   helperText: {
