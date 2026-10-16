@@ -1,4 +1,9 @@
-import { createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from 'firebase/auth';
+import {
+  createUserWithEmailAndPassword,
+  sendPasswordResetEmail,
+  signInWithEmailAndPassword,
+  signOut,
+} from 'firebase/auth';
 import { collection, doc, getDocs, query, setDoc, where } from 'firebase/firestore';
 
 import type { UserRole } from '@/src/types';
@@ -34,7 +39,9 @@ export function translateFirebaseError(error: unknown): string {
       case 'auth/wrong-password':
         return 'CPF ou senha incorretos.';
       case 'auth/user-not-found':
-        return 'Nenhum usuário cadastrado com este CPF.';
+        return 'Nenhum usuário cadastrado com estas credenciais.';
+      case 'auth/invalid-email':
+        return 'Formato de e-mail inválido.';
       case 'auth/user-disabled':
         return 'Esta conta foi desativada. Entre em contato com o suporte.';
       case 'auth/too-many-requests':
@@ -54,7 +61,7 @@ export function translateFirebaseError(error: unknown): string {
     return error.message;
   }
 
-  return 'Ocorreu um erro ao entrar. Tente novamente.';
+  return 'Ocorreu um erro ao processar sua solicitação. Tente novamente.';
 }
 
 /**
@@ -122,4 +129,49 @@ export async function registerUser({
   // Encerra a sessão criada automaticamente pelo cadastro para que o usuário
   // precise entrar novamente na tela de login.
   await signOut(auth);
+}
+
+/**
+ * Envia e-mail de redefinição de senha via Firebase Auth a partir de um e-mail ou CPF informado.
+ * Retorna o e-mail de destino para confirmação visual ao usuário.
+ */
+export async function sendPasswordResetInstructions(identifier: string): Promise<string> {
+  const trimmed = identifier.trim();
+
+  if (!trimmed) {
+    throw new Error('Informe seu e-mail ou CPF cadastrado.');
+  }
+
+  // Caso 1: O usuário digitou diretamente o e-mail
+  if (trimmed.includes('@')) {
+    await sendPasswordResetEmail(auth, trimmed);
+    return trimmed;
+  }
+
+  // Caso 2: O usuário digitou o CPF (com ou sem máscara)
+  const cleanCpf = trimmed.replace(/\D/g, '');
+  if (cleanCpf.length !== CPF_LENGTH) {
+    throw new Error('Informe um e-mail válido ou um CPF com 11 dígitos.');
+  }
+
+  const formattedCpf = formatCpf(cleanCpf);
+  const candidates = Array.from(new Set([cleanCpf, formattedCpf]));
+
+  const usersRef = collection(db, 'usuarios');
+  const userQuery = query(usersRef, where('cpf', 'in', candidates));
+  const querySnapshot = await getDocs(userQuery);
+
+  if (querySnapshot.empty) {
+    throw new Error('Nenhum usuário cadastrado com este CPF.');
+  }
+
+  const userData = querySnapshot.docs[0].data();
+  const targetEmail = userData.email;
+
+  if (!targetEmail) {
+    throw new Error('Usuário cadastrado com este CPF não possui e-mail vinculado.');
+  }
+
+  await sendPasswordResetEmail(auth, targetEmail);
+  return targetEmail;
 }
