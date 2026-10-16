@@ -101,7 +101,7 @@ export function LoginScreen() {
           <View style={styles.fieldGroup}>
             <View style={styles.passwordLabelRow}>
               <Text style={styles.fieldLabel}>Senha</Text>
-              <Pressable accessibilityRole="button" onPress={() => undefined}>
+              <Pressable accessibilityRole="button" onPress={() => router.push('/forgot-password')}>
                 <Text style={styles.forgotPassword}>Esqueci minha senha</Text>
               </Pressable>
             </View>
