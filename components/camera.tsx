@@ -1,5 +1,6 @@
 import { AppColors } from "@/constants/theme";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
+import { Image } from 'expo-image';
 import { useState } from "react";
 import { Alert, Modal, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import * as ImagePicker from 'expo-image-picker';
@@ -87,7 +88,11 @@ export function Camera({
             </Pressable>
 
             <View style={instructionStyles.brand}>
-              <MaterialIcons name="water-drop" size={21} color={AppColors.actionBlue} />
+              <Image
+                source={require('@/assets/images/vetor-risco-logo.png')}
+                contentFit="contain"
+                style={instructionStyles.brandLogo}
+              />
               <View>
                 <Text style={instructionStyles.brandName}>VetorRisco</Text>
                 <Text style={instructionStyles.brandSubtitle}>RECIFE</Text>
@@ -225,20 +230,24 @@ const instructionStyles = StyleSheet.create({
   brand: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: 5,
+  },
+  brandLogo: {
+    width: 22,
+    height: 26,
   },
   brandName: {
     color: AppColors.primaryText,
-    fontSize: 12,
+    fontSize: 14,
     fontWeight: '700',
-    lineHeight: 14,
+    lineHeight: 16,
   },
   brandSubtitle: {
     color: AppColors.actionBlue,
-    fontSize: 7,
+    fontSize: 8,
     fontWeight: '700',
     letterSpacing: 0.5,
-    lineHeight: 9,
+    lineHeight: 10,
   },
   content: {
     flex: 1,
@@ -252,7 +261,7 @@ const instructionStyles = StyleSheet.create({
   introCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    minHeight: 82,
+    minHeight: 94,
     paddingHorizontal: 11,
     borderRadius: 10,
     borderWidth: 1,
@@ -284,25 +293,25 @@ const instructionStyles = StyleSheet.create({
     borderRadius: 3,
     backgroundColor: '#DBEAFE',
     color: AppColors.actionBlue,
-    fontSize: 8,
+    fontSize: 9,
     fontWeight: '700',
     letterSpacing: 0.2,
   },
   title: {
     color: AppColors.primaryText,
-    fontSize: 15,
+    fontSize: 18,
     fontWeight: '700',
-    lineHeight: 18,
+    lineHeight: 22,
   },
   description: {
     marginHorizontal: 2,
     color: '#334155',
-    fontSize: 10,
-    lineHeight: 15,
+    fontSize: 12,
+    lineHeight: 18,
   },
   stepCard: {
     flexDirection: 'row',
-    minHeight: 91,
+    minHeight: 106,
     padding: 10,
     borderRadius: 10,
     borderWidth: 1,
@@ -333,18 +342,18 @@ const instructionStyles = StyleSheet.create({
   stepTitle: {
     flex: 1,
     color: AppColors.primaryText,
-    fontSize: 11,
+    fontSize: 14,
     fontWeight: '700',
   },
   stepNumber: {
     color: '#94A3B8',
-    fontSize: 8,
+    fontSize: 10,
   },
   stepDescription: {
     marginTop: 3,
     color: '#64748B',
-    fontSize: 8.5,
-    lineHeight: 12,
+    fontSize: 11,
+    lineHeight: 16,
   },
   tip: {
     flexDirection: 'row',
@@ -360,12 +369,12 @@ const instructionStyles = StyleSheet.create({
   tipText: {
     flex: 1,
     color: '#64748B',
-    fontSize: 8,
-    lineHeight: 11,
+    fontSize: 10,
+    lineHeight: 14,
   },
   warning: {
     flexDirection: 'row',
-    padding: 9,
+    padding: 11,
     borderRadius: 10,
     borderWidth: 1,
     borderColor: '#FCD34D',
@@ -385,14 +394,14 @@ const instructionStyles = StyleSheet.create({
   },
   warningTitle: {
     color: '#92400E',
-    fontSize: 9,
+    fontSize: 12,
     fontWeight: '700',
   },
   warningBody: {
     marginTop: 2,
     color: '#92400E',
-    fontSize: 8,
-    lineHeight: 11,
+    fontSize: 11,
+    lineHeight: 15,
   },
   warningStrong: {
     fontWeight: '700',
@@ -407,7 +416,7 @@ const instructionStyles = StyleSheet.create({
   checkboxRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    minHeight: 28,
+    minHeight: 32,
     gap: 7,
   },
   checkbox: {
@@ -426,13 +435,13 @@ const instructionStyles = StyleSheet.create({
   },
   checkboxLabel: {
     color: AppColors.primaryText,
-    fontSize: 9,
+    fontSize: 12,
   },
   continueButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    height: 46,
+    height: 48,
     marginTop: 5,
     borderRadius: 10,
     backgroundColor: AppColors.actionBlue,
@@ -445,7 +454,7 @@ const instructionStyles = StyleSheet.create({
   continueLabel: {
     marginRight: 6,
     color: AppColors.surface,
-    fontSize: 10,
+    fontSize: 13,
     fontWeight: '700',
   },
 });
