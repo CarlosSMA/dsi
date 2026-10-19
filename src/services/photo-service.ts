@@ -1,3 +1,5 @@
+import { File } from 'expo-file-system';
+
 import { getSupabase, photoBucket } from './supabase';
 
 const SIGNED_URL_EXPIRATION_SECONDS = 60 * 60 * 24 * 365;
@@ -22,12 +24,7 @@ export async function uploadReportPhoto({
   fileName,
   mimeType,
 }: UploadPhotoParams): Promise<UploadedPhoto> {
-  const response = await fetch(uri);
-  if (!response.ok) {
-    throw new Error('Não foi possível ler a foto capturada.');
-  }
-
-  const file = await response.arrayBuffer();
+  const file = await new File(uri).arrayBuffer();
   const extension = getFileExtension(fileName, mimeType);
   const path = `reports/${userId}/${reportId}/${Date.now()}${extension}`;
 
