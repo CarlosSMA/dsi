@@ -3,22 +3,19 @@ import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { useState } from "react";
 import { Alert, Pressable, View } from "react-native";
 import * as ImagePicker from 'expo-image-picker';
-import * as Location from 'expo-location';
 import { styles } from "@/constants/style";
-import { useAuth } from "@/src/contexts/auth-context";
-import { registrarDenuncia } from "@/src/services/denuncia-service";
-import { Gps } from "@/src/lib/gps";
 
 interface CameraProps {
   cameraType?: ImagePicker.CameraType;
   quality?: number;
+  onPhotoTaken?: (asset: ImagePicker.ImagePickerAsset) => Promise<void> | void;
 }
 
 export function Camera({
   cameraType,
   quality,
+  onPhotoTaken,
 }: CameraProps) {
-  const { usuario } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   return (
@@ -30,7 +27,7 @@ export function Camera({
           handleTakePhoto({
             cameraType,
             quality,
-            usuarioId: usuario?.id,
+            onPhotoTaken,
             isSubmitting,
             setIsSubmitting,
           })
@@ -44,7 +41,7 @@ export function Camera({
 interface HandleTakePhotoParams {
   cameraType?: ImagePicker.CameraType;
   quality?: number;
-  usuarioId?: string;
+  onPhotoTaken?: (asset: ImagePicker.ImagePickerAsset) => Promise<void> | void;
   isSubmitting: boolean;
   setIsSubmitting: (isSubmitting: boolean) => void;
 }
@@ -52,7 +49,7 @@ interface HandleTakePhotoParams {
 async function handleTakePhoto({
   cameraType,
   quality,
-  usuarioId,
+  onPhotoTaken,
   isSubmitting,
   setIsSubmitting,
 }: HandleTakePhotoParams) {
@@ -62,27 +59,12 @@ async function handleTakePhoto({
 
   setIsSubmitting(true);
   try {
-    const location = await Gps.getCurrentLocation();
-    if (!location) {
-      return;
-    }
-
     const result = await takePhoto(cameraType, quality);
-    if (!result || result.canceled) {
+    if (!result || result.canceled || !result.assets[0]) {
       return;
     }
 
-    if (!usuarioId) {
-      Alert.alert('Sessão necessária', 'Entre na sua conta para registrar uma ocorrência.');
-      return;
-    }
-
-    await registrarDenuncia({
-      id_denunciador: usuarioId,
-      latitude: location.latitude,
-      longitude: location.longitude,
-    });
-    Alert.alert('Ocorrência registrada', 'Sua ocorrência foi enviada para análise.');
+    await onPhotoTaken?.(result.assets[0]);
   } catch (error) {
     console.error('Erro ao registrar ocorrência:', error);
     Alert.alert('Erro', 'Não foi possível registrar a ocorrência. Tente novamente.');
@@ -91,7 +73,7 @@ async function handleTakePhoto({
   }
 }
 
-async function takePhoto(
+export async function takePhoto(
   cameraType?: ImagePicker.CameraType.back | ImagePicker.CameraType.front,
   quality?: number
 ) {
