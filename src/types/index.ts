@@ -18,12 +18,14 @@ export interface AgenteMunicipal extends Usuario {
 export type StatusDenuncia = 'pendente' | 'em_analise' | 'confirmada' | 'descartada';
 
 export interface Denuncia {
+  id: string;
   id_denunciador: string;
   statusDenuncia: StatusDenuncia;
   localizacao: {
     latitude: number;
     longitude: number;
   };
+  bairro: string;
+  urlFoto?: string;
   dataCriacao: Date;
-  dataAtualizacao: Date;
 }
