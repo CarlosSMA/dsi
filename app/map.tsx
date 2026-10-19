@@ -3,7 +3,7 @@ import { ActivityIndicator, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import MapSurface from '@/components/map-surface';
-import { Camera } from '@/components/camera';
+import { PhotoReportEntry } from '@/components/photo-report-entry';
 import { styles } from '@/constants/style';
 import { Profile } from '@/components/profile';
 import { Search } from '@/components/search';
@@ -35,7 +35,7 @@ export default function MapRoute() {
             <Profile />
           </View>
 
-          <Camera />
+          <PhotoReportEntry />
         </View>
       </View>
     </SafeAreaView>
