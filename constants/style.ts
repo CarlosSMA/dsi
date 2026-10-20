@@ -84,6 +84,12 @@ export const styles = StyleSheet.create({
     color: AppColors.primaryText,
     fontFamily: Fonts?.sans,
   },
+  profileMenuAction: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingVertical: 4,
+  },
   cameraButton: {
     width: 86,
     height: 86,

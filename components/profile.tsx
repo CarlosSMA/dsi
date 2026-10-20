@@ -38,10 +38,25 @@ export function Profile() {
           style={styles.profileMenuBackdrop}
           onPress={() => setMenuVisible(false)}>
           <Pressable
-            style={[styles.profileMenu, { top: insets.top + 76, right: 18 }]}
-            onPress={handleLogout}>
-            <MaterialIcons name="logout" size={20} color={AppColors.highRisk} />
-            <Text style={styles.profileMenuItemText}>Sair</Text>
+            style={[styles.profileMenu, { top: insets.top + 76, right: 18, flexDirection: 'column', alignItems: 'stretch', gap: 8 }]}
+            onPress={() => undefined}>
+            <Pressable
+              style={styles.profileMenuAction}
+              accessibilityRole="button"
+              onPress={() => {
+                setMenuVisible(false);
+                router.push('/profile');
+              }}>
+              <MaterialIcons name="person" size={20} color={AppColors.actionBlue} />
+              <Text style={styles.profileMenuItemText}>Perfil</Text>
+            </Pressable>
+            <Pressable
+              style={styles.profileMenuAction}
+              accessibilityRole="button"
+              onPress={handleLogout}>
+              <MaterialIcons name="logout" size={20} color={AppColors.highRisk} />
+              <Text style={styles.profileMenuItemText}>Sair</Text>
+            </Pressable>
           </Pressable>
         </Pressable>
       </Modal>

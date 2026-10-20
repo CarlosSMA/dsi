@@ -1,5 +1,5 @@
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-import { Stack } from 'expo-router';
+import { Redirect, Stack, useRouter } from 'expo-router';
 import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
@@ -11,12 +11,9 @@ import {
 } from 'react-native';
 
 import { AppColors, Fonts } from '@/constants/theme';
+import { useAuth } from '@/src/contexts/auth-context';
 
 const profilePreview = {
-  name: 'Daniel',
-  role: 'Cidadão Colaborador',
-  status: 'Boa Viagem',
-  level: 'Nível 2 Cívico',
   reports: '2 ATIVAS',
   reportSummary: '2 reportes em acompanhamento',
   notifiedSpots: '5',
@@ -24,6 +21,25 @@ const profilePreview = {
 };
 
 export default function ProfileScreen() {
+  const { usuario, carregando } = useAuth();
+  const router = useRouter();
+
+  if (carregando) {
+    return (
+      <SafeAreaView style={styles.loadingState}>
+        <MaterialIcons name="person" size={30} color={AppColors.actionBlue} />
+        <Text style={styles.loadingLabel}>Carregando perfil...</Text>
+      </SafeAreaView>
+    );
+  }
+
+  if (!usuario) {
+    return <Redirect href="/login" />;
+  }
+
+  const roleLabel = usuario.role === 'agente' ? 'Agente Municipal' : 'Cidadão Colaborador';
+  const initials = getInitials(usuario.nome);
+
   return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
       <Stack.Screen options={{ headerShown: false }} />
@@ -49,17 +65,19 @@ export default function ProfileScreen() {
 
         <View style={styles.userCard}>
           <View style={styles.avatar}>
-            <Text style={styles.avatarLabel}>DA</Text>
+            <Text style={styles.avatarLabel}>{initials}</Text>
           </View>
           <View style={styles.userCopy}>
-            <Text style={styles.greeting}>Olá, {profilePreview.name}!</Text>
+            <Text style={styles.greeting}>Olá, {usuario.nome}!</Text>
             <Text style={styles.userMeta}>
-              <MaterialIcons name="location-on" size={13} color={AppColors.actionBlue} />{' '}
-              {profilePreview.role} • {profilePreview.status}
+              <MaterialIcons name="person-outline" size={13} color={AppColors.actionBlue} />{' '}
+              {roleLabel} • {usuario.email || 'Perfil ativo'}
             </Text>
             <View style={styles.levelBadge}>
               <MaterialIcons name="public" size={11} color={AppColors.securityBlue} />
-              <Text style={styles.levelLabel}>{profilePreview.level}</Text>
+              <Text style={styles.levelLabel}>
+                {usuario.numero_matricula || usuario.cpf || 'Cadastro ativo'}
+              </Text>
             </View>
           </View>
         </View>
@@ -125,28 +143,45 @@ export default function ProfileScreen() {
       </ScrollView>
 
       <View style={styles.bottomNav}>
-        <BottomNavItem icon="home" label="Início" />
-        <View style={styles.reportNavItem}>
+        <BottomNavItem icon="home" label="Início" onPress={() => router.replace('/map')} />
+        <Pressable
+          style={styles.reportNavItem}
+          accessibilityRole="button"
+          accessibilityLabel="Abrir denúncia"
+          onPress={() => router.push('/photo-report')}>
           <View style={styles.reportNavButton}>
             <MaterialIcons name="photo-camera" size={23} color={AppColors.surface} />
           </View>
           <Text style={styles.navLabel}>Denunciar</Text>
-        </View>
-        <BottomNavItem icon="person-outline" label="Perfil" selected />
+        </Pressable>
+        <BottomNavItem icon="person-outline" label="Perfil" selected onPress={() => router.replace('/profile')} />
       </View>
     </SafeAreaView>
   );
+}
+
+function getInitials(name: string): string {
+  const initials = name
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase() ?? '')
+    .join('');
+
+  return initials || 'U';
 }
 
 interface BottomNavItemProps {
   icon: keyof typeof MaterialIcons.glyphMap;
   label: string;
   selected?: boolean;
+  onPress?: () => void;
 }
 
-function BottomNavItem({ icon, label, selected = false }: BottomNavItemProps) {
+function BottomNavItem({ icon, label, selected = false, onPress }: BottomNavItemProps) {
   return (
-    <Pressable style={styles.navItem} accessibilityRole="button">
+    <Pressable style={styles.navItem} accessibilityRole="button" onPress={onPress}>
       <MaterialIcons
         name={icon}
         size={22}
@@ -208,6 +243,17 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
     backgroundColor: '#F8F7FF',
+  },
+  loadingState: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: '#F8F7FF',
+  },
+  loadingLabel: {
+    color: AppColors.secondaryText,
+    fontSize: 13,
   },
   content: {
     flexGrow: 1,
