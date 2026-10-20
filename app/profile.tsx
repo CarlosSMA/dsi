@@ -37,7 +37,7 @@ export default function ProfileScreen() {
     return <Redirect href="/login" />;
   }
 
-  const roleLabel = usuario.role === 'agente' ? 'Agente Municipal' : 'Cidadão Colaborador';
+  const roleLabel = usuario.role === 'agente' ? 'Agente Municipal' : 'Cidadão';
   const initials = getInitials(usuario.nome);
 
   return (
