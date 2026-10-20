@@ -123,7 +123,37 @@ export default function ProfileScreen() {
           <Text style={styles.footerCaption}>Iniciativa de apoio à Saúde Pública de Recife</Text>
         </View>
       </ScrollView>
+
+      <View style={styles.bottomNav}>
+        <BottomNavItem icon="home" label="Início" />
+        <View style={styles.reportNavItem}>
+          <View style={styles.reportNavButton}>
+            <MaterialIcons name="photo-camera" size={23} color={AppColors.surface} />
+          </View>
+          <Text style={styles.navLabel}>Denunciar</Text>
+        </View>
+        <BottomNavItem icon="person-outline" label="Perfil" selected />
+      </View>
     </SafeAreaView>
+  );
+}
+
+interface BottomNavItemProps {
+  icon: keyof typeof MaterialIcons.glyphMap;
+  label: string;
+  selected?: boolean;
+}
+
+function BottomNavItem({ icon, label, selected = false }: BottomNavItemProps) {
+  return (
+    <Pressable style={styles.navItem} accessibilityRole="button">
+      <MaterialIcons
+        name={icon}
+        size={22}
+        color={selected ? AppColors.actionBlue : AppColors.secondaryText}
+      />
+      <Text style={[styles.navLabel, selected && styles.navLabelSelected]}>{label}</Text>
+    </Pressable>
   );
 }
 
@@ -183,7 +213,7 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     paddingHorizontal: 16,
     paddingTop: 10,
-    paddingBottom: 24,
+    paddingBottom: 34,
     gap: 12,
   },
   header: {
@@ -442,5 +472,49 @@ const styles = StyleSheet.create({
     marginTop: 5,
     color: '#94A3B8',
     fontSize: 9,
+  },
+  bottomNav: {
+    minHeight: 62,
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    justifyContent: 'space-around',
+    paddingHorizontal: 22,
+    paddingTop: 7,
+    borderTopWidth: 1,
+    borderTopColor: '#E2E8F0',
+    backgroundColor: AppColors.surface,
+  },
+  navItem: {
+    width: 74,
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    gap: 3,
+    paddingBottom: 4,
+  },
+  navLabel: {
+    color: AppColors.secondaryText,
+    fontSize: 10,
+  },
+  navLabelSelected: {
+    color: AppColors.actionBlue,
+    fontWeight: '700',
+  },
+  reportNavItem: {
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    marginTop: -29,
+  },
+  reportNavButton: {
+    width: 48,
+    height: 48,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 24,
+    backgroundColor: AppColors.actionBlue,
+    shadowColor: AppColors.shadow,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.2,
+    shadowRadius: 5,
+    elevation: 4,
   },
 });
