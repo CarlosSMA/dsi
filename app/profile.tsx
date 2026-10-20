@@ -117,6 +117,7 @@ export default function ProfileScreen() {
             title="Notificações e Alertas"
             subtitle="Respostas da Vigilância Ambiental e avisos"
             badge="1 nova"
+            onPress={() => router.push('/notifications')}
           />
           <ActionRow
             icon="badge"
@@ -217,13 +218,14 @@ interface ActionRowProps {
   subtitle: string;
   badge?: string;
   destructive?: boolean;
+  onPress?: () => void;
 }
 
-function ActionRow({ icon, title, subtitle, badge, destructive = false }: ActionRowProps) {
+function ActionRow({ icon, title, subtitle, badge, destructive = false, onPress }: ActionRowProps) {
   const color = destructive ? AppColors.highRisk : AppColors.actionBlue;
 
   return (
-    <Pressable style={styles.actionRow} accessibilityRole="button">
+    <Pressable style={styles.actionRow} accessibilityRole="button" onPress={onPress}>
       <View style={[styles.actionIcon, destructive && styles.destructiveIcon]}>
         <MaterialIcons name={icon} size={19} color={color} />
       </View>
