@@ -147,7 +147,7 @@ export default function PhotoReportScreen() {
           ) : (
             <>
               <MaterialIcons name="photo-camera" size={22} color={AppColors.surface} />
-              <Text style={styles.submitLabel}>TIRAR DEPOIS</Text>
+              <Text style={styles.submitLabel}>TIRAR FOTO</Text>
             </>
           )}
         </Pressable>
