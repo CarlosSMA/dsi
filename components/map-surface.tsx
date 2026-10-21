@@ -134,6 +134,14 @@ export default function MapSurface({ focus, scope, onSelectArea }: MapSurfacePro
       leafletRef.current = L;
       mapRef.current = map;
       attributionRef.current = L.control.attribution({ prefix: false }).addTo(map);
+      // Crédito obrigatório do mapa (Stadia e OpenStreetMap): pequeno e discreto, mas visível.
+      Object.assign(attributionRef.current.getContainer()!.style, {
+        background: 'transparent',
+        color: '#94A3B8',
+        fontSize: '8px',
+        lineHeight: '10px',
+        padding: '0 8px 4px 0',
+      });
       baseRef.current = L.layerGroup().addTo(map);
       layersRef.current = L.layerGroup().addTo(map);
       setIsReady(true);

@@ -1,9 +1,8 @@
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { Redirect, Stack, useRouter } from 'expo-router';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -11,22 +10,26 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import * as ImagePicker from 'expo-image-picker';
-import * as Location from 'expo-location';
 import { Image } from 'expo-image';
 
 import { AppColors, Fonts } from '@/constants/theme';
-import { Gps } from '@/src/lib/gps';
 import { useAuth } from '@/src/contexts/auth-context';
-import { registrarDenuncia } from '@/src/services/denuncia-service';
-import { removeReportPhoto, uploadReportPhoto } from '@/src/services/photo-service';
-import { takePhoto } from '@/components/camera';
+import { useRegistrarOcorrencia } from '@/src/features/report/useRegistrarOcorrencia';
+import { getPreference, ocultarInstrucoesFotoKey, removePreference, setPreference } from '@/src/lib/preferences';
 
 export default function PhotoReportScreen() {
   const router = useRouter();
   const { usuario, carregando } = useAuth();
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [previewUri, setPreviewUri] = useState<string | null>(null);
+  const { isSubmitting, previewUri, registrarComFoto } = useRegistrarOcorrencia(usuario);
+  const [ocultarInstrucoes, setOcultarInstrucoes] = useState(false);
+
+  // Carrega a escolha salva de não mostrar mais estas instruções.
+  useEffect(() => {
+    if (!usuario) return;
+    getPreference(ocultarInstrucoesFotoKey(usuario.id))
+      .then((valor) => setOcultarInstrucoes(valor === 'true'))
+      .catch(() => setOcultarInstrucoes(false));
+  }, [usuario]);
 
   if (carregando) {
     return <LoadingState />;
@@ -36,60 +39,15 @@ export default function PhotoReportScreen() {
     return <Redirect href="/login" />;
   }
 
-  const currentUser = usuario;
+  const userId = usuario.id;
 
-  async function handleTakePhoto() {
-    if (isSubmitting) {
-      return;
-    }
-
-    setIsSubmitting(true);
-    setPreviewUri(null);
-
-    try {
-      const location = await Gps.getCurrentLocation();
-      if (!location) {
-        return;
-      }
-
-      const result = await takePhoto(ImagePicker.CameraType.back, 0.7);
-      if (!result || result.canceled || !result.assets[0]) {
-        return;
-      }
-
-      const asset = result.assets[0];
-      setPreviewUri(asset.uri);
-      const bairro = await getNeighborhood(location.latitude, location.longitude);
-      const reportId = `${currentUser.id}-${Date.now()}`;
-      const uploadedPhoto = await uploadReportPhoto({
-        uri: asset.uri,
-        userId: currentUser.id,
-        reportId,
-        fileName: asset.fileName,
-        mimeType: asset.mimeType,
-      });
-
-      try {
-        await registrarDenuncia({
-          id: reportId,
-          id_denunciador: currentUser.id,
-          latitude: location.latitude,
-          longitude: location.longitude,
-          bairro,
-          urlFoto: uploadedPhoto.url,
-        });
-      } catch (error) {
-        await removeReportPhoto(uploadedPhoto.path);
-        throw error;
-      }
-
-      Alert.alert('Ocorrência registrada', 'Sua foto foi enviada para análise.');
-    } catch (error) {
-      console.error('Erro ao registrar ocorrência com foto:', error);
-      Alert.alert('Erro', getErrorMessage(error));
-    } finally {
-      setIsSubmitting(false);
-    }
+  function alternarOcultarInstrucoes() {
+    const novoValor = !ocultarInstrucoes;
+    setOcultarInstrucoes(novoValor);
+    const chave = ocultarInstrucoesFotoKey(userId);
+    (novoValor ? setPreference(chave, 'true') : removePreference(chave)).catch((error) =>
+      console.error('Erro ao salvar preferência das instruções:', error),
+    );
   }
 
   return (
@@ -137,17 +95,31 @@ export default function PhotoReportScreen() {
         </View>
 
         <Pressable
+          accessibilityRole="checkbox"
+          accessibilityState={{ checked: ocultarInstrucoes }}
+          hitSlop={6}
+          onPress={alternarOcultarInstrucoes}
+          style={styles.checkboxRow}>
+          <MaterialIcons
+            name={ocultarInstrucoes ? 'check-box' : 'check-box-outline-blank'}
+            size={22}
+            color={ocultarInstrucoes ? AppColors.actionBlue : AppColors.secondaryText}
+          />
+          <Text style={styles.checkboxLabel}>Não mostrar estas instruções novamente</Text>
+        </Pressable>
+
+        <Pressable
           accessibilityRole="button"
           accessibilityLabel="Tirar foto e registrar ocorrência"
           disabled={isSubmitting}
           style={[styles.submitButton, isSubmitting && styles.disabledButton]}
-          onPress={handleTakePhoto}>
+          onPress={registrarComFoto}>
           {isSubmitting ? (
             <ActivityIndicator color={AppColors.surface} />
           ) : (
             <>
               <MaterialIcons name="photo-camera" size={22} color={AppColors.surface} />
-              <Text style={styles.submitLabel}>TIRAR DEPOIS</Text>
+              <Text style={styles.submitLabel}>TIRAR FOTO</Text>
             </>
           )}
         </Pressable>
@@ -174,26 +146,6 @@ function LoadingState() {
       <ActivityIndicator size="large" color={AppColors.actionBlue} />
     </View>
   );
-}
-
-async function getNeighborhood(latitude: number, longitude: number): Promise<string> {
-  const addresses = await Location.reverseGeocodeAsync({ latitude, longitude });
-  const address = addresses[0];
-  const neighborhood = address?.district || address?.subregion || address?.city;
-
-  if (!neighborhood || neighborhood.trim().length < 2) {
-    throw new Error('Não foi possível identificar o bairro pela localização.');
-  }
-
-  return neighborhood;
-}
-
-function getErrorMessage(error: unknown): string {
-  if (error instanceof Error && error.message) {
-    return error.message;
-  }
-
-  return 'Não foi possível registrar a ocorrência. Tente novamente.';
 }
 
 const styles = StyleSheet.create({
@@ -257,6 +209,13 @@ const styles = StyleSheet.create({
   warningText: { flex: 1, gap: 3 },
   warningTitle: { color: '#92400E', fontSize: 14, fontWeight: '700' },
   warningBody: { color: '#B45309', fontSize: 13, lineHeight: 18 },
+  checkboxRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 2,
+  },
+  checkboxLabel: { flex: 1, color: AppColors.secondaryText, fontSize: 13 },
   submitButton: {
     minHeight: 58,
     marginTop: 4,

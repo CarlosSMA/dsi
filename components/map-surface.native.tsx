@@ -298,15 +298,12 @@ const styles = StyleSheet.create({
     borderRightColor: 'transparent',
     borderTopColor: AppColors.actionBlue,
   },
+  // Crédito obrigatório do mapa (Stadia e OpenStreetMap): pequeno e discreto, mas visível.
   attribution: {
     position: 'absolute',
-    right: 6,
-    bottom: 6,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 4,
-    backgroundColor: 'rgba(255, 255, 255, 0.85)',
-    color: AppColors.secondaryText,
-    fontSize: 10,
+    right: 8,
+    bottom: 4,
+    color: '#94A3B8',
+    fontSize: 8,
   },
 });
