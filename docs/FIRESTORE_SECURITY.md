@@ -52,6 +52,8 @@ O sistema define dois papéis principais de acesso: **Cidadão** (`cidadao`) e *
 - `cpf` (string, 11-14 chars): Obrigatório, imutável.
 - `role` (string): Obrigatório, valores permitidos `cidadao` ou `agente`.
 - `numero_matricula` (string, até 30 chars): Opcional (para agentes).
+- `dataNascimento` (string, `AAAA-MM-DD`): Opcional, editável pelo próprio usuário em Meus Dados Cadastrais.
+- `telefone` (string, 10 ou 11 dígitos com DDD): Opcional, editável pelo próprio usuário em Meus Dados Cadastrais.
 - `dataCriacao` (timestamp): Obrigatório, imutável.
 - `dataAtualizacao` (timestamp): Obrigatório na atualização.
 
