@@ -1,23 +1,46 @@
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useRouter } from 'expo-router';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
 
 import { AppColors } from '@/constants/theme';
+import { useAuth } from '@/src/contexts/auth-context';
+import { useRegistrarOcorrencia } from '@/src/features/report/useRegistrarOcorrencia';
+import { getPreference, ocultarInstrucoesFotoKey } from '@/src/lib/preferences';
 
 const SIZE = 60;
 
 export function PhotoReportEntry() {
   const router = useRouter();
+  const { usuario } = useAuth();
+  const { isSubmitting, registrarComFoto } = useRegistrarOcorrencia(usuario);
+
+  // Se o usuário marcou "Não mostrar estas instruções novamente", vai direto para a foto.
+  async function handlePress() {
+    const ocultarInstrucoes = usuario
+      ? await getPreference(ocultarInstrucoesFotoKey(usuario.id)).catch(() => null)
+      : null;
+
+    if (ocultarInstrucoes === 'true') {
+      await registrarComFoto();
+    } else {
+      router.push('/photo-report');
+    }
+  }
 
   return (
     // A faixa ocupa a largura toda só para centralizar o botão; os toques fora dele passam para o mapa.
     <View pointerEvents="box-none" style={styles.container}>
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel="Abrir página para registrar uma ocorrência"
-        style={({ pressed }) => [styles.button, pressed && styles.buttonPressed]}
-        onPress={() => router.push('/photo-report')}>
-        <MaterialIcons name="photo-camera" size={28} color={AppColors.surface} />
+        accessibilityLabel="Registrar uma ocorrência com foto"
+        disabled={isSubmitting}
+        style={({ pressed }) => [styles.button, (pressed || isSubmitting) && styles.buttonPressed]}
+        onPress={handlePress}>
+        {isSubmitting ? (
+          <ActivityIndicator color={AppColors.surface} />
+        ) : (
+          <MaterialIcons name="photo-camera" size={28} color={AppColors.surface} />
+        )}
       </Pressable>
     </View>
   );
