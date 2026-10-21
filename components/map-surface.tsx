@@ -1,8 +1,8 @@
-import 'leaflet/dist/leaflet.css';
+// Leaflet CSS e carregado dinamicamente no navegador para compatibilidade com o Metro web bundler
 
 import type { Control, LayerGroup, Map as LeafletMap } from 'leaflet';
 import { useEffect, useRef, useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { Platform, StyleSheet, View } from 'react-native';
 
 import { MapLocateButton } from '@/components/map-locate-button';
 import {
@@ -93,6 +93,17 @@ export default function MapSurface({ focus, scope, onSelectArea }: MapSurfacePro
 
   useEffect(() => {
     let cancelled = false;
+
+    if (Platform.OS === 'web' && typeof document !== 'undefined') {
+      const linkId = 'leaflet-css';
+      if (!document.getElementById(linkId)) {
+        const link = document.createElement('link');
+        link.id = linkId;
+        link.rel = 'stylesheet';
+        link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
+        document.head.appendChild(link);
+      }
+    }
 
     (async () => {
       const leafletModule = await import('leaflet');
