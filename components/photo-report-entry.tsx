@@ -1,47 +1,50 @@
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useRouter } from 'expo-router';
-import { Pressable, StyleSheet, Text } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 
-import { AppColors, Fonts } from '@/constants/theme';
+import { AppColors } from '@/constants/theme';
+
+const SIZE = 60;
 
 export function PhotoReportEntry() {
   const router = useRouter();
 
   return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel="Abrir página para registrar uma ocorrência"
-      style={styles.button}
-      onPress={() => router.push('/photo-report')}>
-      <MaterialIcons name="photo-camera" size={26} color={AppColors.surface} />
-      <Text style={styles.label}>TIRAR DEPOIS</Text>
-    </Pressable>
+    // A faixa ocupa a largura toda só para centralizar o botão; os toques fora dele passam para o mapa.
+    <View pointerEvents="box-none" style={styles.container}>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="Abrir página para registrar uma ocorrência"
+        style={({ pressed }) => [styles.button, pressed && styles.buttonPressed]}
+        onPress={() => router.push('/photo-report')}>
+        <MaterialIcons name="photo-camera" size={28} color={AppColors.surface} />
+      </Pressable>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  button: {
+  container: {
     position: 'absolute',
-    left: 24,
-    right: 24,
+    left: 0,
+    right: 0,
     bottom: 28,
-    minHeight: 58,
-    borderRadius: 16,
+    alignItems: 'center',
+  },
+  button: {
+    width: SIZE,
+    height: SIZE,
+    borderRadius: SIZE / 2,
     backgroundColor: AppColors.actionBlue,
     alignItems: 'center',
     justifyContent: 'center',
-    flexDirection: 'row',
-    gap: 10,
     shadowColor: AppColors.shadow,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.24,
     shadowRadius: 8,
     elevation: 6,
   },
-  label: {
-    color: AppColors.surface,
-    fontFamily: Fonts?.sans,
-    fontSize: 16,
-    fontWeight: '700',
+  buttonPressed: {
+    opacity: 0.85,
   },
 });
