@@ -8,16 +8,24 @@ type AppAlertProps = {
   title: string;
   messages: string[];
   buttonLabel?: string;
+  // "success" troca o ícone de erro por um de confirmação, em verde.
+  variant?: 'error' | 'success';
   onClose: () => void;
 };
 
-export function AppAlert({ visible, title, messages, buttonLabel = 'Entendi', onClose }: AppAlertProps) {
+export function AppAlert({ visible, title, messages, buttonLabel = 'Entendi', variant = 'error', onClose }: AppAlertProps) {
+  const isSuccess = variant === 'success';
+
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
       <View style={styles.backdrop}>
         <View accessibilityRole="alert" style={styles.card}>
-          <View style={styles.iconCircle}>
-            <MaterialIcons name="error-outline" size={28} color={AppColors.highRisk} />
+          <View style={[styles.iconCircle, isSuccess && styles.iconCircleSuccess]}>
+            <MaterialIcons
+              name={isSuccess ? 'check-circle-outline' : 'error-outline'}
+              size={28}
+              color={isSuccess ? AppColors.safe : AppColors.highRisk}
+            />
           </View>
 
           <Text style={styles.title}>{title}</Text>
@@ -25,7 +33,7 @@ export function AppAlert({ visible, title, messages, buttonLabel = 'Entendi', on
           <View style={styles.messageList}>
             {messages.map((message) => (
               <View key={message} style={styles.messageRow}>
-                <View style={styles.bullet} />
+                <View style={[styles.bullet, isSuccess && styles.bulletSuccess]} />
                 <Text style={styles.messageText}>{message}</Text>
               </View>
             ))}
@@ -70,6 +78,9 @@ const styles = StyleSheet.create({
     marginBottom: 14,
     backgroundColor: '#FEF2F2',
   },
+  iconCircleSuccess: {
+    backgroundColor: '#ECFDF5',
+  },
   title: {
     color: AppColors.primaryText,
     fontSize: 18,
@@ -94,6 +105,9 @@ const styles = StyleSheet.create({
     borderRadius: 3,
     marginTop: 7,
     backgroundColor: AppColors.highRisk,
+  },
+  bulletSuccess: {
+    backgroundColor: AppColors.safe,
   },
   messageText: {
     flex: 1,
