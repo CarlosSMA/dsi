@@ -10,13 +10,9 @@ import {
   BAIRRO_BORDER,
   BAIRRO_FILL,
   BAIRRO_MAX_ZOOM,
-  CIDADES_ATTRIBUTION,
-  CITY_BORDER,
-  CITY_LABEL_COLOR,
   clampRegionToRecife,
   focusForArea,
   isInsideRecife,
-  LAND_FILL,
   labelFits,
   lonSpanOf,
   MAP_ATTRIBUTION,
@@ -32,13 +28,7 @@ import {
   RECIFE_MIN_ZOOM,
   RECIFE_OUTLINE,
   RECIFE_REGION,
-  RMR_CIDADES,
-  RMR_TERRA,
-  SEA_FILL,
-  STREET_LINES_OPACITY,
-  STREET_LINES_URL,
   toMapCoordinates,
-  type MapCoordinate,
   type MapFocus,
   type MapScope,
 } from '@/constants/map';
@@ -55,8 +45,8 @@ interface MapSurfaceProps {
 const EDGE_PADDING = { top: 140, right: 48, bottom: 220, left: 48 };
 const ANIMATION_MS = 600;
 
-// Mapa dos cidadãos, sem ruas: mar, terra e cidades vizinhas ao fundo; afastado, mostra as áreas do
-// Recife; de perto, os bairros.
+// Mapa dos cidadãos: por cima do mapa realista, as regiões do Recife; ao abrir uma região (ou de perto),
+// os bairros.
 const toShape = (area: { label: [number, number]; rings: [number, number][][] }) => ({
   label: { latitude: area.label[1], longitude: area.label[0] },
   rings: area.rings.map(toMapCoordinates),
@@ -74,16 +64,6 @@ const BAIRRO_SHAPES = RECIFE_BAIRROS.map((bairro) => ({
   nome: bairro.nome,
   area: areaDoBairro(bairro.nome),
 }));
-const CIDADE_SHAPES = RMR_CIDADES.map((cidade) => ({ ...toShape(cidade), id: cidade.nome, nome: cidade.nome }));
-const TERRA_RINGS = RMR_TERRA.map(toMapCoordinates);
-
-// Retângulo que cobre toda a região, pintado com a cor do mar por baixo da terra.
-const SEA: MapCoordinate[] = [
-  { latitude: -7.0, longitude: -36.0 },
-  { latitude: -7.0, longitude: -34.0 },
-  { latitude: -9.0, longitude: -34.0 },
-  { latitude: -9.0, longitude: -36.0 },
-];
 
 // Guarda o zoom em passos de meio nível, para o mapa só ser redesenhado quando o zoom muda de fato.
 const zoomOf = (longitudeDelta: number) => Math.round(Math.log2(360 / longitudeDelta) * 2) / 2;
@@ -175,41 +155,20 @@ export default function MapSurface({ focus, scope, onSelectArea }: MapSurfacePro
         pitchEnabled={false}
         rotateEnabled={false}
         toolbarEnabled={false}>
+        {/* Mapa realista com o entorno do Recife esmaecido, para os dois perfis. */}
+        <UrlTile urlTemplate={MAP_TILE_URL} maximumZ={OSM_MAX_ZOOM} shouldReplaceMapContent />
+        <Polygon
+          coordinates={OUTSIDE_RECIFE_MASK}
+          holes={[RECIFE_OUTLINE]}
+          fillColor={OUTSIDE_RECIFE_FILL}
+          // Sem borda: no iOS, só zerar a espessura ainda desenhava uma linha escura no limite da cidade.
+          strokeColor="transparent"
+          strokeWidth={0}
+          zIndex={1}
+        />
+
         {showsRegions ? (
           <>
-            <Polygon coordinates={SEA} fillColor={SEA_FILL} strokeColor="transparent" strokeWidth={0} zIndex={0} />
-            {TERRA_RINGS.map((ring, index) => (
-              <Polygon
-                key={`terra-${index}`}
-                coordinates={ring}
-                fillColor={LAND_FILL}
-                strokeColor="transparent"
-                strokeWidth={0}
-                zIndex={1}
-              />
-            ))}
-            {CIDADE_SHAPES.flatMap((cidade) =>
-              cidade.rings.map((ring, index) => (
-                <Polygon
-                  key={`${cidade.id}-${index}`}
-                  coordinates={ring}
-                  fillColor="transparent"
-                  strokeColor={CITY_BORDER}
-                  strokeWidth={1}
-                  zIndex={1}
-                />
-              )),
-            )}
-            {/* Só o traçado das ruas, sem nomes, bem suave. */}
-            {STREET_LINES_URL ? (
-              <UrlTile urlTemplate={STREET_LINES_URL} maximumZ={OSM_MAX_ZOOM} opacity={STREET_LINES_OPACITY} zIndex={2} />
-            ) : null}
-            {CIDADE_SHAPES.map((cidade) => (
-              <Marker key={cidade.id} coordinate={cidade.label} tracksViewChanges={false}>
-                <Text style={styles.cityLabel}>{cidade.nome.toUpperCase()}</Text>
-              </Marker>
-            ))}
-
             {MICRO_SHAPES.flatMap((micro) =>
               micro.rings.map((ring, index) => (
                 <Polygon
@@ -218,7 +177,7 @@ export default function MapSurface({ focus, scope, onSelectArea }: MapSurfacePro
                   fillColor={MICRO_FILL}
                   strokeColor={MICRO_BORDER}
                   strokeWidth={1}
-                  zIndex={3}
+                  zIndex={2}
                   tappable
                   // Tocar numa região abre os bairros que a compõem.
                   onPress={() => onSelectArea?.(micro.focus)}
@@ -234,7 +193,7 @@ export default function MapSurface({ focus, scope, onSelectArea }: MapSurfacePro
                   fillColor={BAIRRO_FILL}
                   strokeColor={BAIRRO_BORDER}
                   strokeWidth={1}
-                  zIndex={4}
+                  zIndex={3}
                 />
               )),
             )}
@@ -251,20 +210,7 @@ export default function MapSurface({ focus, scope, onSelectArea }: MapSurfacePro
               </Marker>
             ))}
           </>
-        ) : (
-          <>
-            <UrlTile urlTemplate={MAP_TILE_URL} maximumZ={OSM_MAX_ZOOM} shouldReplaceMapContent />
-            <Polygon
-              coordinates={OUTSIDE_RECIFE_MASK}
-              holes={[RECIFE_OUTLINE]}
-              fillColor={OUTSIDE_RECIFE_FILL}
-              // Sem borda: no iOS, só zerar a espessura ainda desenhava uma linha escura no limite da cidade.
-              strokeColor="transparent"
-              strokeWidth={0}
-              zIndex={1}
-            />
-          </>
-        )}
+        ) : null}
 
         {focus?.outline?.map((ring, index) => (
           <Polygon
@@ -273,7 +219,7 @@ export default function MapSurface({ focus, scope, onSelectArea }: MapSurfacePro
             strokeColor={AppColors.actionBlue}
             strokeWidth={2.5}
             fillColor="rgba(28, 100, 242, 0.16)"
-            zIndex={5}
+            zIndex={4}
           />
         ))}
 
@@ -294,7 +240,7 @@ export default function MapSurface({ focus, scope, onSelectArea }: MapSurfacePro
 
       <MapLocateButton onPress={handleLocateMe} />
 
-      <Text style={styles.attribution}>{showsRegions ? CIDADES_ATTRIBUTION : MAP_ATTRIBUTION}</Text>
+      <Text style={styles.attribution}>{MAP_ATTRIBUTION}</Text>
     </>
   );
 }
@@ -302,16 +248,6 @@ export default function MapSurface({ focus, scope, onSelectArea }: MapSurfacePro
 const styles = StyleSheet.create({
   map: {
     ...StyleSheet.absoluteFill,
-  },
-  cityLabel: {
-    color: CITY_LABEL_COLOR,
-    fontSize: 13,
-    fontWeight: '700',
-    letterSpacing: 1.2,
-    textAlign: 'center',
-    textShadowColor: 'rgba(255, 255, 255, 0.95)',
-    textShadowOffset: { width: 0, height: 0 },
-    textShadowRadius: 3,
   },
   microLabel: {
     color: AppColors.securityBlue,

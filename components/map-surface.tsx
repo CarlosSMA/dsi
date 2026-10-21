@@ -11,12 +11,8 @@ import {
   BAIRRO_DETAIL_ZOOM,
   BAIRRO_FILL,
   BAIRRO_MAX_ZOOM,
-  CIDADES_ATTRIBUTION,
-  CITY_BORDER,
-  CITY_LABEL_COLOR,
   focusForArea,
   isInsideRecife,
-  LAND_FILL,
   labelFits,
   lonSpanOf,
   MAP_ATTRIBUTION,
@@ -33,11 +29,6 @@ import {
   RECIFE_FIT_PADDING,
   RECIFE_MIN_ZOOM,
   RECIFE_OUTLINE,
-  RMR_CIDADES,
-  RMR_TERRA,
-  SEA_FILL,
-  STREET_LINES_OPACITY,
-  STREET_LINES_URL,
   type MapCoordinate,
   type MapFocus,
   type MapScope,
@@ -68,10 +59,6 @@ const LABEL_HALO = 'text-shadow:0 0 3px rgba(255,255,255,0.95),0 0 3px rgba(255,
 const bairroLabelHtml = (nome: string) =>
   `<span style="position:absolute;transform:translate(-50%,-50%);width:96px;text-align:center;${LABEL_HALO}
     font:600 10px system-ui,-apple-system,sans-serif;color:${AppColors.secondaryText};">${nome}</span>`;
-
-const cityLabelHtml = (nome: string) =>
-  `<span style="position:absolute;transform:translate(-50%,-50%);white-space:nowrap;text-align:center;${LABEL_HALO}
-    letter-spacing:1.2px;font:700 13px system-ui,-apple-system,sans-serif;color:${CITY_LABEL_COLOR};">${nome.toUpperCase()}</span>`;
 
 const microLabelHtml = (nome: string) =>
   `<span style="position:absolute;transform:translate(-50%,-50%);white-space:nowrap;text-align:center;${LABEL_HALO}
@@ -136,10 +123,6 @@ export default function MapSurface({ focus, scope, onSelectArea }: MapSurfacePro
       leafletRef.current = L;
       mapRef.current = map;
       attributionRef.current = L.control.attribution({ prefix: false }).addTo(map);
-      // O traçado das ruas fica numa camada própria, acima da terra e das áreas desenhadas pelo app.
-      const linesPane = map.createPane('ruas');
-      linesPane.style.zIndex = '450';
-      linesPane.style.pointerEvents = 'none';
       baseRef.current = L.layerGroup().addTo(map);
       layersRef.current = L.layerGroup().addTo(map);
       setIsReady(true);
@@ -152,8 +135,8 @@ export default function MapSurface({ focus, scope, onSelectArea }: MapSurfacePro
     };
   }, []);
 
-  // Cidadãos: mapa sem ruas, desenhado pelo app (mar, terra, cidades vizinhas e as áreas do Recife; de
-  // perto, os bairros). Agentes da prefeitura: mapa com ruas, com o entorno do Recife esmaecido.
+  // Mapa realista com o entorno do Recife esmaecido, para os dois perfis. Cidadãos veem por cima as
+  // regiões do Recife e, ao abrir uma região (ou de perto), os bairros.
   useEffect(() => {
     const L = leafletRef.current;
     const map = mapRef.current;
@@ -166,23 +149,20 @@ export default function MapSurface({ focus, scope, onSelectArea }: MapSurfacePro
     const showsRegions = scope === 'bairro';
     map.setMaxZoom(showsRegions ? BAIRRO_MAX_ZOOM : OSM_MAX_ZOOM);
     base.clearLayers();
-    attribution.removeAttribution(MAP_ATTRIBUTION).removeAttribution(CIDADES_ATTRIBUTION);
-    map.getContainer().style.background = showsRegions ? SEA_FILL : MAP_BACKGROUND;
+    L.tileLayer(MAP_TILE_URL, { maxZoom: OSM_MAX_ZOOM }).addTo(base);
+    attribution.removeAttribution(MAP_ATTRIBUTION).addAttribution(MAP_ATTRIBUTION);
+
+    // Fora do Recife, o mapa fica esmaecido, para a cidade ser o destaque.
+    L.polygon([toLatLngs(OUTSIDE_RECIFE_MASK), toLatLngs(RECIFE_OUTLINE)], {
+      stroke: false,
+      fillColor: OUTSIDE_RECIFE_FILL,
+      fillOpacity: 1,
+      interactive: false,
+    }).addTo(base);
 
     if (!showsRegions) {
-      L.tileLayer(MAP_TILE_URL, { maxZoom: OSM_MAX_ZOOM }).addTo(base);
-      attribution.addAttribution(MAP_ATTRIBUTION);
-      // Fora do Recife, o mapa fica esmaecido, para a cidade ser o destaque.
-      L.polygon([toLatLngs(OUTSIDE_RECIFE_MASK), toLatLngs(RECIFE_OUTLINE)], {
-        stroke: false,
-        fillColor: OUTSIDE_RECIFE_FILL,
-        fillOpacity: 1,
-        interactive: false,
-      }).addTo(base);
       return;
     }
-
-    attribution.addAttribution(CIDADES_ATTRIBUTION);
 
     const label = (position: [number, number], html: string) =>
       L.marker([position[1], position[0]], {
@@ -190,19 +170,6 @@ export default function MapSurface({ focus, scope, onSelectArea }: MapSurfacePro
         interactive: false,
         keyboard: false,
       });
-
-    // O fundo do mapa (cor do mar) aparece onde não há terra.
-    for (const ring of RMR_TERRA) {
-      L.polygon(swap(ring), { stroke: false, fillColor: LAND_FILL, fillOpacity: 1, interactive: false }).addTo(base);
-    }
-    for (const cidade of RMR_CIDADES) {
-      L.polygon(cidade.rings.map(swap), { color: CITY_BORDER, weight: 1, fill: false, interactive: false }).addTo(base);
-      label(cidade.label, cityLabelHtml(cidade.nome)).addTo(base);
-    }
-    // Só o traçado das ruas, sem nomes, bem suave.
-    if (STREET_LINES_URL) {
-      L.tileLayer(STREET_LINES_URL, { pane: 'ruas', maxZoom: OSM_MAX_ZOOM, opacity: STREET_LINES_OPACITY }).addTo(base);
-    }
 
     const areaLabels = RECIFE_MICRORREGIOES.map((micro) => ({
       marker: label(micro.label, microLabelHtml(micro.nome)),

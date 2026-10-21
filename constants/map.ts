@@ -3,7 +3,6 @@ import type { UserRole } from '@/src/types';
 import { RECIFE_BAIRROS, type RecifeBairro } from './recife-bairros';
 import { RECIFE_BOUNDARY, RECIFE_BOUNDS } from './recife-boundary';
 import { RECIFE_MICRORREGIOES, type RecifeMicrorregiao } from './recife-microrregioes';
-import { RMR_CIDADES, RMR_TERRA, type RmrCidade } from './rmr-cidades';
 
 export type MapRegion = {
   latitude: number;
@@ -41,19 +40,11 @@ export {
   RECIFE_BAIRROS,
   RECIFE_BOUNDS,
   RECIFE_MICRORREGIOES,
-  RMR_CIDADES,
-  RMR_TERRA,
   type RecifeBairro,
   type RecifeMicrorregiao,
-  type RmrCidade,
 };
 
-// Mapa dos cidadãos, sem ruas: mar, terra e cidades vizinhas em tons neutros, e o Recife em azul claro.
-export const SEA_FILL = '#DCE8F5';
-export const LAND_FILL = '#F1F2F4';
-export const CITY_BORDER = '#C9CED6';
-export const CITY_LABEL_COLOR = '#64748B';
-// Áreas do Recife em azul translúcido, para o traçado das ruas aparecer por baixo.
+// Regiões e bairros do Recife em azul translúcido (o azul do app), por cima do mapa realista.
 export const MICRO_FILL = 'rgba(28, 100, 242, 0.08)';
 export const MICRO_BORDER = '#8FB0EF';
 export const BAIRRO_FILL = 'rgba(28, 100, 242, 0.05)';
@@ -193,25 +184,13 @@ export const OSM_MAX_ZOOM = 19;
 // Zoom mínimo: o suficiente para ver o Recife inteiro, sem afastar até a região ao redor.
 export const RECIFE_MIN_ZOOM = 11;
 
-// Mapa dos cidadãos: afastado, mostra as 18 microrregiões; a partir deste zoom, mostra também os bairros.
+// Mapa dos cidadãos: afastado, mostra as regiões; a partir deste zoom, mostra também os bairros.
 export const BAIRRO_DETAIL_ZOOM = 14;
 // O mesmo limite expresso como largura visível em graus (react-native-maps trabalha com regiões, não com zoom).
 export const BAIRRO_DETAIL_DELTA = 0.035;
 
-// Zoom máximo para cidadãos: dá para ver os bairros de perto, mas o mapa não tem ruas.
+// Zoom máximo para cidadãos: dá para ver os bairros de perto, sem chegar ao detalhe das ruas.
 export const BAIRRO_MAX_ZOOM = 15;
-
-// Mapa dos cidadãos: desenhado pelo app com os limites do OpenStreetMap e os bairros da Prefeitura do Recife.
-export const CIDADES_ATTRIBUTION = STADIA_API_KEY
-  ? '© Stadia Maps © Stamen © OpenStreetMap · Prefeitura do Recife'
-  : '© OpenStreetMap · Prefeitura do Recife';
-
-// Mapa dos cidadãos: só o traçado das ruas (sem nomes), bem suave por cima da terra.
-// Sem a chave da Stadia no .env, o mapa dos cidadãos fica sem o traçado.
-export const STREET_LINES_URL = STADIA_API_KEY
-  ? `https://tiles.stadiamaps.com/tiles/stamen_toner_lines/{z}/{x}/{y}@2x.png?api_key=${STADIA_API_KEY}`
-  : null;
-export const STREET_LINES_OPACITY = 0.12;
 
 export const MAP_ATTRIBUTION = STADIA_API_KEY
   ? '© Stadia Maps © OpenMapTiles © OpenStreetMap'
