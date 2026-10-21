@@ -1,7 +1,7 @@
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
-import type { ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import {
   KeyboardAvoidingView,
   Platform,
@@ -88,6 +88,17 @@ export function ProfileFormScreen({ backLabel, title, subtitle, children }: Prof
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
+  );
+}
+
+// Link dentro do formulário (ex.: "Alterar senha"), com uma linha separando do campo acima.
+export function LinkRow({ icon, label, onPress }: { icon: IconName; label: string; onPress: () => void }) {
+  return (
+    <Pressable accessibilityRole="button" onPress={onPress} style={styles.linkRow}>
+      <MaterialIcons name={icon} size={16} color={AppColors.actionBlue} />
+      <Text style={styles.linkLabel}>{label}</Text>
+      <MaterialIcons name="chevron-right" size={20} color={AppColors.actionBlue} />
+    </Pressable>
   );
 }
 
@@ -188,6 +199,31 @@ export function Input({ focused, invalid, style, ...props }: InputProps) {
   );
 }
 
+// Campo de senha com o botão de mostrar/ocultar.
+export function PasswordInput({ focused, invalid, ...props }: InputProps) {
+  const [visible, setVisible] = useState(false);
+
+  return (
+    <View style={[styles.input, focused && styles.inputFocused, invalid && styles.inputInvalid]}>
+      <TextInput
+        placeholderTextColor="#94A3B8"
+        secureTextEntry={!visible}
+        autoCapitalize="none"
+        autoCorrect={false}
+        style={[styles.inputText, styles.passwordText]}
+        {...props}
+      />
+      <Pressable
+        accessibilityLabel={visible ? 'Ocultar senha' : 'Mostrar senha'}
+        accessibilityRole="button"
+        hitSlop={8}
+        onPress={() => setVisible((current) => !current)}>
+        <MaterialIcons name={visible ? 'visibility' : 'visibility-off'} size={20} color={AppColors.secondaryText} />
+      </Pressable>
+    </View>
+  );
+}
+
 interface PrimaryButtonProps {
   icon: IconName;
   label: string;
@@ -258,6 +294,20 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   backLabel: {
+    color: AppColors.actionBlue,
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  linkRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: '#E2E8F0',
+  },
+  linkLabel: {
+    flex: 1,
     color: AppColors.actionBlue,
     fontSize: 14,
     fontWeight: '600',
@@ -387,6 +437,10 @@ const styles = StyleSheet.create({
     color: AppColors.primaryText,
     fontSize: 15,
     fontWeight: '500',
+  },
+  passwordText: {
+    flex: 1,
+    minHeight: 40,
   },
   inputFocused: {
     borderColor: AppColors.actionBlue,

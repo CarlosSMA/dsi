@@ -1,4 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Controller, useForm, type FieldErrors } from 'react-hook-form';
 
@@ -13,6 +14,7 @@ import {
   FormCard,
   GreenTag,
   Input,
+  LinkRow,
   LockedValue,
   PrimaryButton,
   ProfileCard,
@@ -37,6 +39,7 @@ interface MeusDadosScreenProps {
 }
 
 export function MeusDadosScreen({ usuario }: MeusDadosScreenProps) {
+  const router = useRouter();
   const { atualizarUsuario } = useAuth();
   const [focusedField, setFocusedField] = useState<keyof MeusDadosFormData | null>(null);
   const [alert, setAlert] = useState<AlertState>(null);
@@ -162,6 +165,8 @@ export function MeusDadosScreen({ usuario }: MeusDadosScreenProps) {
             )}
           />
         </Field>
+
+        <LinkRow icon="lock-outline" label="Alterar senha" onPress={() => router.push('/alterar-senha')} />
       </FormCard>
 
       <PrimaryButton

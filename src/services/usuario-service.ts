@@ -1,6 +1,7 @@
+import { EmailAuthProvider, reauthenticateWithCredential, updatePassword } from 'firebase/auth';
 import { deleteField, doc, serverTimestamp, updateDoc } from 'firebase/firestore';
 
-import { db } from './firebase';
+import { auth, db } from './firebase';
 
 export interface DadosCadastraisInput {
   nome: string;
@@ -24,3 +25,16 @@ export async function atualizarDadosCadastrais(userId: string, dados: DadosCadas
   });
 }
 
+/**
+ * Troca a senha do usuário logado. O Firebase exige confirmar a senha atual (reautenticação)
+ * antes de permitir a troca; se a senha atual estiver errada, o erro "auth/invalid-credential" é lançado.
+ */
+export async function alterarSenha(senhaAtual: string, novaSenha: string): Promise<void> {
+  const user = auth.currentUser;
+  if (!user || !user.email) {
+    throw new Error('Sessão expirada. Entre novamente para alterar a senha.');
+  }
+
+  await reauthenticateWithCredential(user, EmailAuthProvider.credential(user.email, senhaAtual));
+  await updatePassword(user, novaSenha);
+}
