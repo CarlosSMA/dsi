@@ -12,6 +12,7 @@ import {
 
 import { AppColors, Fonts } from '@/constants/theme';
 import { useAuth } from '@/src/contexts/auth-context';
+import { PrefeituraProfileView } from '@/src/features/profile/PrefeituraProfileView';
 
 const profilePreview = {
   reports: '2 ATIVAS',
@@ -37,7 +38,12 @@ export default function ProfileScreen() {
     return <Redirect href="/login" />;
   }
 
-  const roleLabel = usuario.role === 'agente' ? 'Agente Municipal' : 'Cidadão';
+  // Redireciona automaticamente para o Painel da Prefeitura se o usuário for Agente Municipal
+  if (usuario.role === 'agente') {
+    return <PrefeituraProfileView usuario={usuario} />;
+  }
+
+  const roleLabel = 'Cidadão';
   const initials = getInitials(usuario.nome);
 
   return (
