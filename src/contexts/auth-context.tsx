@@ -18,6 +18,8 @@ interface AuthContextData {
   cadastro: (email: string, senha: string, nome: string) => Promise<void>;
   loginAnonimo: () => Promise<void>;
   logout: () => Promise<void>;
+  // Atualiza os dados do usuário na sessão depois de salvá-los no Firestore.
+  atualizarUsuario: (dados: Partial<Usuario>) => void;
 }
 
 const AuthContext = createContext<AuthContextData>({} as AuthContextData);
@@ -55,6 +57,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 role: data.role || 'cidadao',
                 cpf: data.cpf || '',
                 numero_matricula: data.numero_matricula || '',
+                dataNascimento: data.dataNascimento || '',
+                telefone: data.telefone || '',
               });
             } else {
               setUsuario({
@@ -108,8 +112,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUsuario(null);
   }
 
+  function atualizarUsuario(dados: Partial<Usuario>) {
+    setUsuario((atual) => (atual ? { ...atual, ...dados } : atual));
+  }
+
   return (
-    <AuthContext.Provider value={{ usuario, carregando, login, cadastro, loginAnonimo, logout }}>
+    <AuthContext.Provider value={{ usuario, carregando, login, cadastro, loginAnonimo, logout, atualizarUsuario }}>
       {children}
     </AuthContext.Provider>
   );

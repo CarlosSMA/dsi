@@ -129,6 +129,7 @@ export default function ProfileScreen() {
             icon="badge"
             title="Meus Dados Cadastrais"
             subtitle="Informações pessoais, bairro e contato"
+            onPress={() => router.push('/meus-dados')}
           />
           <ActionRow
             icon="logout"
