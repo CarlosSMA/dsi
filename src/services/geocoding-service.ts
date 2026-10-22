@@ -189,7 +189,9 @@ export async function buscarEndereco(texto: string, scope: MapScope): Promise<Ma
     return buscarBairro(place);
   }
 
-  const bairro = place.address?.suburb ?? place.address?.neighbourhood;
+  // Prefeitura: vai até a rua e também abre a região dela no mapa, com os bairros.
+  const bairroLocal = findBairro(pointOf(place));
+  const bairro = bairroLocal?.nome ?? place.address?.suburb ?? place.address?.neighbourhood;
 
   return {
     ...regionFromBoundingBox(place.boundingbox, MIN_RUA_DELTA),
@@ -197,5 +199,6 @@ export async function buscarEndereco(texto: string, scope: MapScope): Promise<Ma
     scope: 'rua',
     title: place.name || place.address?.road || texto,
     subtitle: [bairro, 'Recife'].filter(Boolean).join(', '),
+    area: bairroLocal ? areaDoBairro(bairroLocal.nome) : undefined,
   };
 }
