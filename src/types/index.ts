@@ -7,6 +7,10 @@ export interface Usuario {
   cpf?: string;
   role: UserRole;
   numero_matricula?: string;
+  // Data de nascimento no formato ISO (AAAA-MM-DD).
+  dataNascimento?: string;
+  // Celular/WhatsApp, só os dígitos com DDD (10 ou 11).
+  telefone?: string;
   dataCriacao?: Date;
   dataAtualizacao?: Date;
 }
