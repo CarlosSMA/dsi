@@ -165,8 +165,8 @@ export default function MapSurface({ focus, scope, onSelectArea }: MapSurfacePro
       return;
     }
 
-    const showsRegions = scope === 'bairro';
-    map.setMaxZoom(showsRegions ? BAIRRO_MAX_ZOOM : OSM_MAX_ZOOM);
+    // Os dois perfis veem as regiões do Recife; cidadãos vão só até o nível de bairro, a prefeitura chega às ruas.
+    map.setMaxZoom(scope === 'bairro' ? BAIRRO_MAX_ZOOM : OSM_MAX_ZOOM);
     base.clearLayers();
     L.tileLayer(MAP_TILE_URL, { maxZoom: OSM_MAX_ZOOM }).addTo(base);
     attribution.removeAttribution(MAP_ATTRIBUTION).addAttribution(MAP_ATTRIBUTION);
@@ -178,10 +178,6 @@ export default function MapSurface({ focus, scope, onSelectArea }: MapSurfacePro
       fillOpacity: 1,
       interactive: false,
     }).addTo(base);
-
-    if (!showsRegions) {
-      return;
-    }
 
     const label = (position: [number, number], html: string) =>
       L.marker([position[1], position[0]], {
