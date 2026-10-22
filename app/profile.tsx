@@ -22,7 +22,7 @@ const profilePreview = {
 };
 
 export default function ProfileScreen() {
-  const { usuario, carregando } = useAuth();
+  const { usuario, carregando, logout } = useAuth();
   const router = useRouter();
 
   if (carregando) {
@@ -45,6 +45,11 @@ export default function ProfileScreen() {
 
   const roleLabel = 'Cidadão';
   const initials = getInitials(usuario.nome);
+
+  async function handleLogout() {
+    await logout();
+    router.replace('/login');
+  }
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
@@ -136,6 +141,7 @@ export default function ProfileScreen() {
             title="Encerrar Sessão"
             subtitle="Desconectar conta com segurança deste dispositivo"
             destructive
+            onPress={handleLogout}
           />
         </View>
 
