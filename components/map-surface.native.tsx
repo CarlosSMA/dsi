@@ -70,8 +70,6 @@ const zoomOf = (longitudeDelta: number) => Math.round(Math.log2(360 / longitudeD
 const deltaOf = (zoom: number) => 360 / 2 ** zoom;
 export default function MapSurface({ focus, scope, onSelectArea }: MapSurfaceProps) {
   const mapRef = useRef<MapView>(null);
-  // Cidadãos veem as microrregiões (e, de perto, os bairros) desenhadas sobre o mapa.
-  const showsRegions = scope === 'bairro';
   const { width: screenWidth } = useWindowDimensions();
   const [zoom, setZoom] = useState(zoomOf(RECIFE_REGION.longitudeDelta));
   const visibleDelta = deltaOf(zoom);
@@ -167,50 +165,48 @@ export default function MapSurface({ focus, scope, onSelectArea }: MapSurfacePro
           zIndex={1}
         />
 
-        {showsRegions ? (
-          <>
-            {MICRO_SHAPES.flatMap((micro) =>
-              micro.rings.map((ring, index) => (
-                <Polygon
-                  key={`${micro.id}-${index}`}
-                  coordinates={ring}
-                  fillColor={MICRO_FILL}
-                  strokeColor={MICRO_BORDER}
-                  strokeWidth={1}
-                  zIndex={2}
-                  tappable
-                  // Tocar numa região abre os bairros que a compõem.
-                  onPress={() => onSelectArea?.(micro.focus)}
-                />
-              )),
-            )}
+        {/* Os dois perfis veem as regiões do Recife (e, de perto ou ao abrir uma região, os bairros).
+            A diferença é o zoom: cidadãos vão só até o nível de bairro; a prefeitura chega às ruas. */}
+        {MICRO_SHAPES.flatMap((micro) =>
+          micro.rings.map((ring, index) => (
+            <Polygon
+              key={`${micro.id}-${index}`}
+              coordinates={ring}
+              fillColor={MICRO_FILL}
+              strokeColor={MICRO_BORDER}
+              strokeWidth={1}
+              zIndex={2}
+              tappable
+              // Tocar numa região abre os bairros que a compõem.
+              onPress={() => onSelectArea?.(micro.focus)}
+            />
+          )),
+        )}
 
-            {visibleBairros.flatMap((bairro) =>
-              bairro.rings.map((ring, index) => (
-                <Polygon
-                  key={`${bairro.id}-${index}`}
-                  coordinates={ring}
-                  fillColor={BAIRRO_FILL}
-                  strokeColor={BAIRRO_BORDER}
-                  strokeWidth={1}
-                  zIndex={3}
-                />
-              )),
-            )}
+        {visibleBairros.flatMap((bairro) =>
+          bairro.rings.map((ring, index) => (
+            <Polygon
+              key={`${bairro.id}-${index}`}
+              coordinates={ring}
+              fillColor={BAIRRO_FILL}
+              strokeColor={BAIRRO_BORDER}
+              strokeWidth={1}
+              zIndex={3}
+            />
+          )),
+        )}
 
-            {/* Só mostra o nome das áreas grandes o bastante na tela; as menores ganham nome ao aproximar. */}
-            {visibleAreaLabels.map((area) => (
-              <Marker key={area.id} coordinate={area.label} tracksViewChanges={false}>
-                <Text style={styles.microLabel}>{area.nome}</Text>
-              </Marker>
-            ))}
-            {visibleBairroLabels.map((bairro) => (
-              <Marker key={bairro.id} coordinate={bairro.label} tracksViewChanges={false}>
-                <Text style={styles.bairroLabel}>{bairro.nome}</Text>
-              </Marker>
-            ))}
-          </>
-        ) : null}
+        {/* Só mostra o nome das áreas grandes o bastante na tela; as menores ganham nome ao aproximar. */}
+        {visibleAreaLabels.map((area) => (
+          <Marker key={area.id} coordinate={area.label} tracksViewChanges={false}>
+            <Text style={styles.microLabel}>{area.nome}</Text>
+          </Marker>
+        ))}
+        {visibleBairroLabels.map((bairro) => (
+          <Marker key={bairro.id} coordinate={bairro.label} tracksViewChanges={false}>
+            <Text style={styles.bairroLabel}>{bairro.nome}</Text>
+          </Marker>
+        ))}
 
         {focus?.outline?.map((ring, index) => (
           <Polygon
