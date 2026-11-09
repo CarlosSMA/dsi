@@ -1,5 +1,5 @@
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-import { useRouter } from 'expo-router';
+import { Href, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import {
   Alert,
@@ -10,10 +10,9 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { collection, getDocs } from 'firebase/firestore';
 
 import { AppColors } from '@/constants/theme';
-import { db } from '@/src/services/firebase';
+import { listarDenuncias } from '@/src/services/denuncias-consulta-service';
 import type { Usuario } from '@/src/types';
 import { useAuth } from '@/src/contexts/auth-context';
 
@@ -31,42 +30,27 @@ export function PrefeituraProfileView({ usuario }: PrefeituraProfileViewProps) {
   const router = useRouter();
   const { logout } = useAuth();
   const [stats, setStats] = useState<DenunciaStats>({
-    abertas: 128,
-    emAnalise: 43,
-    resolvidas: 85,
+    abertas: 0,
+    emAnalise: 0,
+    resolvidas: 0,
   });
 
   useEffect(() => {
     async function loadStats() {
       try {
-        const denunciasRef = collection(db, 'denuncias');
-        const snapshot = await getDocs(denunciasRef);
+        const denuncias = await listarDenuncias();
+        const abertas = denuncias.filter(({ statusDenuncia }) => statusDenuncia === 'pendente').length;
+        const emAnalise = denuncias.filter(
+          ({ statusDenuncia }) => statusDenuncia === 'em_analise'
+        ).length;
+        const resolvidas = denuncias.filter(
+          ({ statusDenuncia }) =>
+            statusDenuncia === 'confirmada' || statusDenuncia === 'descartada'
+        ).length;
 
-        if (!snapshot.empty) {
-          let abertas = 0;
-          let emAnalise = 0;
-          let resolvidas = 0;
-
-          snapshot.forEach((doc) => {
-            const data = doc.data();
-            const status = data.statusDenuncia;
-
-            if (status === 'pendente') {
-              abertas++;
-            } else if (status === 'em_analise') {
-              emAnalise++;
-            } else if (status === 'confirmada' || status === 'descartada') {
-              resolvidas++;
-            }
-          });
-
-          // Se existirem denúncias no Firestore, atualiza com os dados reais
-          if (abertas > 0 || emAnalise > 0 || resolvidas > 0) {
-            setStats({ abertas, emAnalise, resolvidas });
-          }
-        }
-      } catch {
-        // Mantém valores padrão de demonstração do Figma em caso de regras/offline
+        setStats({ abertas, emAnalise, resolvidas });
+      } catch (error) {
+        console.error('Não foi possível carregar as estatísticas das denúncias.', error);
       }
     }
 
@@ -85,14 +69,7 @@ export function PrefeituraProfileView({ usuario }: PrefeituraProfileViewProps) {
     if (moduleName === 'Mapa Vetorial') {
       router.replace('/map');
     } else if (moduleName === 'Denúncias') {
-      Alert.alert(
-        'Módulo de Denúncias',
-        `Existem ${stats.abertas} denúncias aguardando inspeção municipal no Grande Recife.`,
-        [
-          { text: 'Ver no Mapa', onPress: () => router.replace('/map') },
-          { text: 'Fechar', style: 'cancel' },
-        ]
-      );
+      router.push('/denuncias' as Href);
     } else {
       Alert.alert(
         moduleName,
