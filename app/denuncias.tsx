@@ -1,5 +1,5 @@
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-import { Redirect, useRouter } from 'expo-router';
+import { Redirect, Stack, useRouter } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
@@ -80,6 +80,8 @@ export default function DenunciasRoute() {
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
+      {/* A tela tem cabeçalho próprio com o botão de voltar: esconde o cabeçalho padrão da navegação. */}
+      <Stack.Screen options={{ headerShown: false }} />
       <View style={styles.header}>
         <Pressable
           accessibilityLabel="Voltar para o painel da prefeitura"

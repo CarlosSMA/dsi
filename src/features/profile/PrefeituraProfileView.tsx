@@ -1,5 +1,5 @@
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-import { Href, useRouter } from 'expo-router';
+import { Href, Stack, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import {
   Alert,
@@ -86,6 +86,9 @@ export function PrefeituraProfileView({ usuario }: PrefeituraProfileViewProps) {
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
+      {/* O painel tem cabeçalho próprio: esconde o cabeçalho padrão da navegação ("‹ map"), que cobria o topo.
+          Fica aqui para valer tanto em /profile quanto em /prefeitura-profile. */}
+      <Stack.Screen options={{ headerShown: false }} />
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}>
