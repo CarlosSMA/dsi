@@ -1,4 +1,5 @@
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import { Directory, Paths } from 'expo-file-system';
 import { useEffect, useRef, useState } from 'react';
 import MapView, { Marker, Polygon, PROVIDER_DEFAULT, UrlTile, type Region } from 'react-native-maps';
 import { Platform, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
@@ -65,8 +66,14 @@ const BAIRRO_SHAPES = RECIFE_BAIRROS.map((bairro) => ({
   area: areaDoBairro(bairro.nome),
 }));
 
-// Guarda o zoom em passos de meio nível, para o mapa só ser redesenhado quando o zoom muda de fato.
-const zoomOf = (longitudeDelta: number) => Math.round(Math.log2(360 / longitudeDelta) * 2) / 2;
+// Guarda o zoom em níveis inteiros: os nomes só são recalculados (e os marcadores recriados) quando o
+// zoom muda de nível, e não a cada pequeno movimento de pinça.
+const zoomOf = (longitudeDelta: number) => Math.round(Math.log2(360 / longitudeDelta));
+
+// As imagens do mapa já baixadas ficam guardadas no cache do app por 7 dias, para voltar a um zoom
+// ou área já vistos sem baixar tudo de novo (Android e Apple Maps).
+const TILE_CACHE_PATH = new Directory(Paths.cache, 'map-tiles').uri;
+const TILE_CACHE_MAX_AGE = 7 * 24 * 60 * 60;
 const deltaOf = (zoom: number) => 360 / 2 ** zoom;
 export default function MapSurface({ focus, scope, onSelectArea }: MapSurfaceProps) {
   const mapRef = useRef<MapView>(null);
@@ -154,7 +161,13 @@ export default function MapSurface({ focus, scope, onSelectArea }: MapSurfacePro
         rotateEnabled={false}
         toolbarEnabled={false}>
         {/* Mapa realista com o entorno do Recife esmaecido, para os dois perfis. */}
-        <UrlTile urlTemplate={MAP_TILE_URL} maximumZ={OSM_MAX_ZOOM} shouldReplaceMapContent />
+        <UrlTile
+          urlTemplate={MAP_TILE_URL}
+          maximumZ={OSM_MAX_ZOOM}
+          shouldReplaceMapContent
+          tileCachePath={TILE_CACHE_PATH}
+          tileCacheMaxAge={TILE_CACHE_MAX_AGE}
+        />
         <Polygon
           coordinates={OUTSIDE_RECIFE_MASK}
           holes={[RECIFE_OUTLINE]}
