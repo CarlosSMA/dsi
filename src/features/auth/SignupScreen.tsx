@@ -335,7 +335,7 @@ export function SignupScreen() {
             <Pressable
               accessibilityRole="button"
               disabled={isSubmitting}
-              onPress={submitForm(onSubmit, onInvalid)}
+              onPress={() => submitForm(onSubmit, onInvalid)()}
               style={[styles.primaryButton, isSubmitting && styles.primaryButtonDisabled]}>
               <Text style={styles.primaryButtonText}>{isSubmitting ? 'Cadastrando...' : 'Cadastrar'}</Text>
             </Pressable>

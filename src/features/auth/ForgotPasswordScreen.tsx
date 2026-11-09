@@ -184,7 +184,7 @@ export function ForgotPasswordScreen() {
             <Pressable
               accessibilityRole="button"
               disabled={isSubmitting}
-              onPress={submitForm(onSubmit)}
+              onPress={() => submitForm(onSubmit)()}
               style={[styles.submitButton, isSubmitting && styles.submitButtonDisabled]}>
               {isSubmitting ? (
                 <ActivityIndicator color="#FFFFFF" size="small" />

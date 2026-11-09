@@ -143,7 +143,7 @@ export function LoginScreen() {
           <Pressable
             accessibilityRole="button"
             disabled={isSubmitting}
-            onPress={submitForm(onSubmit)}
+            onPress={() => submitForm(onSubmit)()}
             style={[styles.primaryButton, isSubmitting && styles.primaryButtonDisabled]}>
             <Text style={styles.primaryButtonText}>{isSubmitting ? 'Entrando...' : 'Entrar'}</Text>
             {!isSubmitting ? <MaterialIcons name="arrow-forward" size={21} color="#FFFFFF" /> : null}
