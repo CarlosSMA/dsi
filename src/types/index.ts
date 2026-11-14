@@ -33,3 +33,41 @@ export interface Denuncia {
   urlFoto?: string;
   dataCriacao: Date;
 }
+
+export type NivelRiscoEpidemiologico = 'baixo' | 'medio' | 'alto';
+
+export type CategoriaNotificacao =
+  | 'alerta_foco'
+  | 'mutirao_saude'
+  | 'caso_confirmado'
+  | 'orientacao_sanitaria'
+  | 'fumace_bloqueio';
+
+export interface NotificacaoBairro {
+  id: string;
+  bairro: string;
+  rpa: string;
+  micro: string;
+  categoria: CategoriaNotificacao;
+  nivelRisco: NivelRiscoEpidemiologico;
+  titulo: string;
+  descricao: string;
+  meta: string;
+  dataIso: string;
+  recomendacao?: string;
+  casosRecentes?: number;
+  indiceInfestacao?: string;
+  badge?: string;
+}
+
+export interface ResumoBairroEpidemiologico {
+  bairro: string;
+  rpa: string;
+  micro: string;
+  nivelRisco: NivelRiscoEpidemiologico;
+  totalAlertas: number;
+  casosEstimados: number;
+  indiceInfestacaoPredial: number; // ex: 4.2%
+  temMutiraoAgendado: boolean;
+  statusDescricao: string;
+}
