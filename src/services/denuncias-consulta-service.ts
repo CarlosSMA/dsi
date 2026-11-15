@@ -13,9 +13,8 @@ import type { Denuncia, StatusDenuncia } from '@/src/types';
 
 const STATUS_VALIDOS: StatusDenuncia[] = [
   'pendente',
-  'em_analise',
   'confirmada',
-  'descartada',
+  'rejeitada',
 ];
 
 function isStatusDenuncia(value: unknown): value is StatusDenuncia {
@@ -77,6 +76,7 @@ function toDenuncia(snapshot: DocumentSnapshot<DocumentData>): Denuncia {
   return {
     id: denunciaId,
     id_denunciador: data.id_denunciador,
+    id_revisor: typeof data.id_revisor === 'string' && data.id_revisor ? data.id_revisor : undefined,
     statusDenuncia: data.statusDenuncia,
     localizacao: {
       latitude: data.localizacao.latitude,

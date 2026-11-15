@@ -1,5 +1,13 @@
-import { collection, doc, GeoPoint, serverTimestamp, setDoc } from 'firebase/firestore';
+import {
+  collection,
+  doc,
+  GeoPoint,
+  serverTimestamp,
+  setDoc,
+  updateDoc,
+} from 'firebase/firestore';
 import { db } from './firebase';
+import type { StatusDenuncia } from '@/src/types';
 
 interface CriarDenunciaParams {
   id?: string;
@@ -38,4 +46,23 @@ export async function registrarDenuncia({
   });
 
   return docRef.id;
+}
+
+export async function revisarDenuncia(
+  denunciaId: string,
+  statusDenuncia: Extract<StatusDenuncia, 'confirmada' | 'rejeitada'>,
+  idRevisor: string
+): Promise<void> {
+  if (!denunciaId.trim()) {
+    throw new Error('Não é possível revisar uma denúncia sem identificá-la.');
+  }
+
+  if (!idRevisor.trim()) {
+    throw new Error('Não é possível revisar uma denúncia sem identificar o agente.');
+  }
+
+  await updateDoc(doc(db, 'denuncias', denunciaId), {
+    statusDenuncia,
+    id_revisor: idRevisor,
+  });
 }
