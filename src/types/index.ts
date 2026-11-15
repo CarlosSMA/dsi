@@ -19,11 +19,12 @@ export interface AgenteMunicipal extends Usuario {
   numero_matricula: string;
 }
 
-export type StatusDenuncia = 'pendente' | 'em_analise' | 'confirmada' | 'descartada';
+export type StatusDenuncia = 'pendente' | 'confirmada' | 'rejeitada';
 
 export interface Denuncia {
   id: string;
   id_denunciador: string;
+  id_revisor?: string;
   statusDenuncia: StatusDenuncia;
   localizacao: {
     latitude: number;
