@@ -15,8 +15,6 @@ import { useAuth } from '@/src/contexts/auth-context';
 import { PrefeituraProfileView } from '@/src/features/profile/PrefeituraProfileView';
 
 const profilePreview = {
-  reports: '2 ATIVAS',
-  reportSummary: '2 reportes em acompanhamento',
   notifiedSpots: '5',
   sanitaryIndex: 'Médio',
 };
@@ -93,19 +91,22 @@ export default function ProfileScreen() {
           </View>
         </View>
 
-        <View style={styles.reportCard}>
+        <Pressable
+          accessibilityLabel="Abrir minhas denúncias"
+          accessibilityRole="button"
+          onPress={() => router.push('/minhas-denuncias')}
+          style={({ pressed }) => [styles.reportCard, pressed && styles.reportCardPressed]}>
           <View style={styles.cardIconBlue}>
             <MaterialIcons name="assignment" size={21} color={AppColors.actionBlue} />
           </View>
           <View style={styles.reportCopy}>
             <View style={styles.reportTitleRow}>
               <Text style={styles.reportTitle}>Minhas denúncias</Text>
-              <Text style={styles.reportCount}>{profilePreview.reports}</Text>
             </View>
-            <Text style={styles.reportSubtitle}>{profilePreview.reportSummary} • Toque para ver</Text>
+            <Text style={styles.reportSubtitle}>Acompanhe as ocorrências que você registrou</Text>
           </View>
           <MaterialIcons name="chevron-right" size={22} color={AppColors.secondaryText} />
-        </View>
+        </Pressable>
 
         <View style={styles.metricsRow}>
           <MetricCard
@@ -389,6 +390,9 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 1,
   },
+  reportCardPressed: {
+    backgroundColor: '#F1F5F9',
+  },
   cardIconBlue: {
     width: 34,
     height: 34,
@@ -410,15 +414,6 @@ const styles = StyleSheet.create({
     color: AppColors.primaryText,
     fontSize: 14,
     fontWeight: '700',
-  },
-  reportCount: {
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 8,
-    backgroundColor: '#DBEAFE',
-    color: AppColors.securityBlue,
-    fontSize: 8,
-    fontWeight: '800',
   },
   reportSubtitle: {
     marginTop: 3,
