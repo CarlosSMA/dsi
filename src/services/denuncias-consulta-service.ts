@@ -1,6 +1,8 @@
 import {
   collection,
   getDocs,
+  query,
+  where,
   type DocumentData,
   type DocumentSnapshot,
   type Timestamp,
@@ -89,7 +91,26 @@ function toDenuncia(snapshot: DocumentSnapshot<DocumentData>): Denuncia {
 export async function listarDenuncias(): Promise<Denuncia[]> {
   const snapshot = await getDocs(collection(db, 'denuncias'));
 
-  return snapshot.docs
-    .map(toDenuncia)
+  return ordenarDenuncias(snapshot.docs.map(toDenuncia));
+}
+
+export async function listarMinhasDenuncias(usuarioId: string): Promise<Denuncia[]> {
+  const usuarioIdNormalizado = usuarioId.trim();
+
+  if (!usuarioIdNormalizado) {
+    throw new Error('Não é possível listar denúncias sem identificar o usuário.');
+  }
+
+  const denunciasQuery = query(
+    collection(db, 'denuncias'),
+    where('id_denunciador', '==', usuarioIdNormalizado)
+  );
+  const snapshot = await getDocs(denunciasQuery);
+
+  return ordenarDenuncias(snapshot.docs.map(toDenuncia));
+}
+
+function ordenarDenuncias(denuncias: Denuncia[]): Denuncia[] {
+  return denuncias
     .sort((primeira, segunda) => segunda.dataCriacao.getTime() - primeira.dataCriacao.getTime());
 }
