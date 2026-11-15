@@ -14,7 +14,7 @@ As regras de segurança anteriores apresentavam falhas críticas que comprometia
 | :--- | :--- | :--- | :--- |
 | **Leitura de Usuários (`usuarios`)** | `allow read: if true;` | **Vazamento Crítico de PII (LGPD)**: Qualquer pessoa podia listar dados sensíveis (CPF, e-mail, matrícula, nome). | Restrito ao próprio dono da conta (`isOwner(userId)`) ou Agentes Municipais autenticados (`isAgente()`). |
 | **Escrita de Usuários (`usuarios`)** | `allow write: if request.auth != null;` | **Sobrescrita Indevida & Escalação**: Qualquer usuário logado podia alterar dados de terceiros ou se auto-promover para `agente`. | Criação e atualização restritas ao próprio dono (`isOwner(userId)`), com campos imutáveis (`id`, `cpf`, `role`, `dataCriacao`). |
-| **Leitura de Denúncias (`denuncias`)** | `allow read: if false;` | **Quebra de Negócio**: Ninguém conseguia visualizar denúncias/focos no mapa. | Leitura liberada para todos os usuários autenticados (`isAuthenticated()`). |
+| **Leitura de Denúncias (`denuncias`)** | `allow read: if false;` | **Quebra de Negócio**: Ninguém conseguia visualizar denúncias/focos no mapa. | Agentes podem ler todas; cidadãos leem somente denúncias próprias (`id_denunciador == request.auth.uid`). |
 | **Revisão de Denúncias (`denuncias`)** | `allow update: if false;` | **Bloqueio Operacional**: Agentes Municipais não conseguiam auditar ou atualizar status de denúncias. | Atualização restrita a Agentes Municipais (`isAgente()`), com validação de esteira de status e registro de `id_revisor`. |
 | **Validação de Payload** | Inexistente em usuários / Frágil em denúncias | Injeção de campos desconhecidos e ataques de tamanho de payload (DoS). | Validação estrita de tipos, regex de e-mail e URL, limite de caracteres e listas restritas de campos (`hasOnly`). |
 
@@ -34,7 +34,7 @@ O sistema define dois papéis principais de acesso: **Cidadão** (`cidadao`) e *
 | Criar Usuário     | Auto-registro (`role: cidadao`)| Definido via admin/claim   |
 | Atualizar Usuário | Apenas seus dados (exceto CPF) | Apenas seus dados          |
 | Deletar Usuário   | Bloqueado (Auditoria)          | Bloqueado (Auditoria)      |
-| Ler Denúncias     | Permitido (Mapa de calor)      | Permitido (Mapa de calor)  |
+| Ler Denúncias     | Apenas as próprias denúncias   | Todas as denúncias         |
 | Criar Denúncia    | Permitido (vinculado ao UID)   | Permitido (vinculado ao UID|
 | Revisar Denúncia  | Bloqueado                      | Permitido (Status/Auditoria|
 | Deletar Denúncia  | Bloqueado                      | Bloqueado                  |
