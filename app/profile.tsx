@@ -9,19 +9,71 @@ import {
   Text,
   View,
 } from 'react-native';
+import { useCallback, useEffect, useState } from 'react';
 
 import { AppColors, Fonts } from '@/constants/theme';
 import { useAuth } from '@/src/contexts/auth-context';
 import { PrefeituraProfileView } from '@/src/features/profile/PrefeituraProfileView';
+import { listarMinhasDenuncias } from '@/src/services/denuncias-consulta-service';
 
 const profilePreview = {
   notifiedSpots: '5',
   sanitaryIndex: 'Médio',
 };
 
+interface DenunciaResumo {
+  total: number;
+  ativas: number;
+}
+
 export default function ProfileScreen() {
   const { usuario, carregando, logout } = useAuth();
   const router = useRouter();
+  const [resumoDenuncias, setResumoDenuncias] = useState<DenunciaResumo>({
+    total: 0,
+    ativas: 0,
+  });
+  const [carregandoResumo, setCarregandoResumo] = useState(true);
+  const [erroResumo, setErroResumo] = useState(false);
+
+  const carregarResumoDenuncias = useCallback(async () => {
+    if (!usuario || usuario.role !== 'cidadao') {
+      return;
+    }
+
+    setCarregandoResumo(true);
+    setErroResumo(false);
+
+    try {
+      const denuncias = await listarMinhasDenuncias(usuario.id);
+      const ativas = denuncias.filter(
+        ({ statusDenuncia }) =>
+          statusDenuncia === 'pendente' || statusDenuncia === 'em_analise'
+      ).length;
+
+      setResumoDenuncias({
+        total: denuncias.length,
+        ativas,
+      });
+    } catch (error) {
+      console.error('Não foi possível carregar o resumo das denúncias:', error);
+      setErroResumo(true);
+    } finally {
+      setCarregandoResumo(false);
+    }
+  }, [usuario]);
+
+  useEffect(() => {
+    if (!usuario || usuario.role !== 'cidadao') {
+      return;
+    }
+
+    const timeoutId = setTimeout(() => {
+      carregarResumoDenuncias();
+    }, 0);
+
+    return () => clearTimeout(timeoutId);
+  }, [carregarResumoDenuncias, usuario]);
 
   if (carregando) {
     return (
@@ -102,8 +154,23 @@ export default function ProfileScreen() {
           <View style={styles.reportCopy}>
             <View style={styles.reportTitleRow}>
               <Text style={styles.reportTitle}>Minhas denúncias</Text>
+              <Text style={styles.reportCount}>
+                {carregandoResumo ? '...' : erroResumo ? '-' : resumoDenuncias.total}
+              </Text>
             </View>
-            <Text style={styles.reportSubtitle}>Acompanhe as ocorrências que você registrou</Text>
+            <Text style={styles.reportSubtitle}>
+              {erroResumo
+                ? 'Não foi possível carregar o resumo'
+                : carregandoResumo
+                  ? 'Carregando suas ocorrências...'
+                  : resumoDenuncias.ativas === 0
+                    ? 'Nenhuma ocorrência em acompanhamento'
+                    : `${resumoDenuncias.ativas} ${
+                        resumoDenuncias.ativas === 1
+                          ? 'ocorrência em acompanhamento'
+                          : 'ocorrências em acompanhamento'
+                      }`}
+            </Text>
           </View>
           <MaterialIcons name="chevron-right" size={22} color={AppColors.secondaryText} />
         </Pressable>
@@ -414,6 +481,15 @@ const styles = StyleSheet.create({
     color: AppColors.primaryText,
     fontSize: 14,
     fontWeight: '700',
+  },
+  reportCount: {
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 8,
+    backgroundColor: '#DBEAFE',
+    color: AppColors.securityBlue,
+    fontSize: 8,
+    fontWeight: '800',
   },
   reportSubtitle: {
     marginTop: 3,
