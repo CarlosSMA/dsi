@@ -47,8 +47,7 @@ export default function ProfileScreen() {
     try {
       const denuncias = await listarMinhasDenuncias(usuario.id);
       const ativas = denuncias.filter(
-        ({ statusDenuncia }) =>
-          statusDenuncia === 'pendente' || statusDenuncia === 'em_analise'
+        ({ statusDenuncia }) => statusDenuncia === 'pendente'
       ).length;
 
       setResumoDenuncias({

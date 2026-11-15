@@ -3,6 +3,7 @@ import { Redirect, Stack, useRouter } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
+  Alert,
   Pressable,
   RefreshControl,
   ScrollView,
@@ -15,8 +16,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { AppColors } from '@/constants/theme';
 import { useAuth } from '@/src/contexts/auth-context';
 import { DenunciaListItem } from '@/src/features/denuncias/DenunciaListItem';
+import { revisarDenuncia } from '@/src/services/denuncia-service';
 import { listarDenuncias } from '@/src/services/denuncias-consulta-service';
-import type { Denuncia } from '@/src/types';
+import type { Denuncia, StatusDenuncia } from '@/src/types';
 
 export default function DenunciasRoute() {
   const router = useRouter();
@@ -25,6 +27,7 @@ export default function DenunciasRoute() {
   const [carregando, setCarregando] = useState(true);
   const [atualizando, setAtualizando] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
+  const [revisandoId, setRevisandoId] = useState<string | null>(null);
 
   const carregarDenuncias = useCallback(async (refresh = false) => {
     if (refresh) {
@@ -48,6 +51,35 @@ export default function DenunciasRoute() {
       setAtualizando(false);
     }
   }, []);
+
+  const handleReview = useCallback(
+    (denuncia: Denuncia, status: Extract<StatusDenuncia, 'confirmada' | 'rejeitada'>) => {
+      if (!usuario) {
+        return;
+      }
+
+      setRevisandoId(denuncia.id);
+
+      revisarDenuncia(denuncia.id, status, usuario.id)
+        .then(() => {
+          setDenuncias((atual) =>
+            atual.map((item) =>
+              item.id === denuncia.id
+                ? { ...item, statusDenuncia: status, id_revisor: usuario.id }
+                : item
+            )
+          );
+        })
+        .catch((error: unknown) => {
+          Alert.alert(
+            'Não foi possível revisar',
+            error instanceof Error ? error.message : 'Tente novamente.'
+          );
+        })
+        .finally(() => setRevisandoId(null));
+    },
+    [usuario]
+  );
 
   useEffect(() => {
     if (usuario?.role !== 'agente') {
@@ -141,7 +173,12 @@ export default function DenunciasRoute() {
           }
           showsVerticalScrollIndicator={false}>
           {denuncias.map((denuncia) => (
-            <DenunciaListItem denuncia={denuncia} key={denuncia.id} />
+            <DenunciaListItem
+              denuncia={denuncia}
+              key={denuncia.id}
+              onReview={(status) => handleReview(denuncia, status)}
+              reviewing={revisandoId === denuncia.id}
+            />
           ))}
         </ScrollView>
       )}

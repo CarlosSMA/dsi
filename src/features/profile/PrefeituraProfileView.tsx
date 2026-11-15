@@ -22,8 +22,8 @@ interface PrefeituraProfileViewProps {
 
 interface DenunciaStats {
   abertas: number;
-  emAnalise: number;
-  resolvidas: number;
+  confirmadas: number;
+  rejeitadas: number;
 }
 
 export function PrefeituraProfileView({ usuario }: PrefeituraProfileViewProps) {
@@ -31,8 +31,8 @@ export function PrefeituraProfileView({ usuario }: PrefeituraProfileViewProps) {
   const { logout } = useAuth();
   const [stats, setStats] = useState<DenunciaStats>({
     abertas: 0,
-    emAnalise: 0,
-    resolvidas: 0,
+    confirmadas: 0,
+    rejeitadas: 0,
   });
 
   useEffect(() => {
@@ -40,15 +40,14 @@ export function PrefeituraProfileView({ usuario }: PrefeituraProfileViewProps) {
       try {
         const denuncias = await listarDenuncias();
         const abertas = denuncias.filter(({ statusDenuncia }) => statusDenuncia === 'pendente').length;
-        const emAnalise = denuncias.filter(
-          ({ statusDenuncia }) => statusDenuncia === 'em_analise'
+        const confirmadas = denuncias.filter(
+          ({ statusDenuncia }) => statusDenuncia === 'confirmada'
         ).length;
-        const resolvidas = denuncias.filter(
-          ({ statusDenuncia }) =>
-            statusDenuncia === 'confirmada' || statusDenuncia === 'descartada'
+        const rejeitadas = denuncias.filter(
+          ({ statusDenuncia }) => statusDenuncia === 'rejeitada'
         ).length;
 
-        setStats({ abertas, emAnalise, resolvidas });
+        setStats({ abertas, confirmadas, rejeitadas });
       } catch (error) {
         console.error('Não foi possível carregar as estatísticas das denúncias.', error);
       }
@@ -113,7 +112,7 @@ export function PrefeituraProfileView({ usuario }: PrefeituraProfileViewProps) {
           </View>
         </View>
 
-        {/* Linha de Métricas (Abertas, Em análise, Resolvidas) */}
+        {/* Linha de métricas da revisão */}
         <View style={styles.metricsRow}>
           <View style={styles.metricCard}>
             <Text style={[styles.metricValue, { color: AppColors.primaryText }]}>
@@ -124,16 +123,16 @@ export function PrefeituraProfileView({ usuario }: PrefeituraProfileViewProps) {
 
           <View style={styles.metricCard}>
             <Text style={[styles.metricValue, { color: '#3B82F6' }]}>
-              {stats.emAnalise}
+              {stats.confirmadas}
             </Text>
-            <Text style={styles.metricLabel}>Em análise</Text>
+            <Text style={styles.metricLabel}>Confirmadas</Text>
           </View>
 
           <View style={styles.metricCard}>
-            <Text style={[styles.metricValue, { color: '#10B981' }]}>
-              {stats.resolvidas}
+            <Text style={[styles.metricValue, { color: '#B91C1C' }]}>
+              {stats.rejeitadas}
             </Text>
-            <Text style={styles.metricLabel}>Resolvidas</Text>
+            <Text style={styles.metricLabel}>Rejeitadas</Text>
           </View>
         </View>
 
