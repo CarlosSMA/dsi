@@ -170,8 +170,9 @@ service cloud.firestore {
 
     // Colecao: denuncias
     match /denuncias/{denunciaId} {
-      // Leitura: Aberta a todos os usuarios autenticados para plotagem e consulta no mapa
-      allow read: if isAuthenticated();
+      // Leitura: Agentes veem todas; cidadaos veem apenas denuncias proprias
+      allow read: if isAgente() ||
+        (isAuthenticated() && resource.data.id_denunciador == request.auth.uid);
 
       // Criacao: Cidadao ou Agente autenticado registra nova denuncia vinculada ao seu UID
       allow create: if isAuthenticated() &&
