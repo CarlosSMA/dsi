@@ -88,6 +88,13 @@ export default function DashboardRoute() {
     () => criarEvolucao(denuncias, periodo),
     [denuncias, periodo]
   );
+  const rankingBairros = useMemo(() => criarRankingBairros(denuncias), [denuncias]);
+  const summaryCards = [
+    { icon: 'assignment', label: 'Total', value: stats.total, color: AppColors.actionBlue, backgroundColor: '#EFF6FF' },
+    { icon: 'schedule', label: 'Pendentes', value: stats.pendentes, color: AppColors.attention, backgroundColor: '#FFFBEB' },
+    { icon: 'check-circle', label: 'Confirmadas', value: stats.confirmadas, color: AppColors.safe, backgroundColor: '#ECFDF5' },
+    { icon: 'cancel', label: 'Rejeitadas', value: stats.rejeitadas, color: AppColors.highRisk, backgroundColor: '#FEF2F2' },
+  ] as const;
 
   useEffect(() => {
     if (usuario?.role !== 'agente') {
@@ -171,37 +178,12 @@ export default function DashboardRoute() {
           showsVerticalScrollIndicator={false}>
           <Text style={styles.sectionTitle}>Resumo das denúncias</Text>
           <View style={styles.statsGrid}>
-            <StatCard
-              icon="assignment"
-              label="Total"
-              value={stats.total}
-              color={AppColors.actionBlue}
-              backgroundColor="#EFF6FF"
-            />
-            <StatCard
-              icon="schedule"
-              label="Pendentes"
-              value={stats.pendentes}
-              color={AppColors.attention}
-              backgroundColor="#FFFBEB"
-            />
-            <StatCard
-              icon="check-circle"
-              label="Confirmadas"
-              value={stats.confirmadas}
-              color={AppColors.safe}
-              backgroundColor="#ECFDF5"
-            />
-            <StatCard
-              icon="cancel"
-              label="Rejeitadas"
-              value={stats.rejeitadas}
-              color={AppColors.highRisk}
-              backgroundColor="#FEF2F2"
-            />
+            {summaryCards.map((card) => (
+              <StatCard {...card} key={card.label} />
+            ))}
           </View>
           <Text style={styles.sectionTitle}>Evolução das denúncias</Text>
-          <View style={styles.chartCard}>
+          <View style={styles.panel}>
             <View style={styles.periodOptions}>
               {PERIOD_OPTIONS.map((option) => {
                 const selecionado = periodo === option.days;
@@ -252,6 +234,24 @@ export default function DashboardRoute() {
               </ScrollView>
             )}
           </View>
+          <Text style={styles.sectionTitle}>Bairros com mais denúncias</Text>
+          <View style={[styles.panel, styles.rankingPanel]}>
+            {rankingBairros.length === 0 ? (
+              <Text style={styles.chartEmptyText}>Nenhuma denúncia registrada.</Text>
+            ) : (
+              rankingBairros.map((bairro, index) => (
+                <View style={styles.rankingRow} key={bairro.nome}>
+                  <Text style={styles.rankingPosition}>{index + 1}</Text>
+                  <Text numberOfLines={1} style={styles.rankingName}>
+                    {bairro.nome}
+                  </Text>
+                  <Text style={styles.rankingTotal}>
+                    {bairro.total} {bairro.total === 1 ? 'denúncia' : 'denúncias'}
+                  </Text>
+                </View>
+              ))
+            )}
+          </View>
         </ScrollView>
       )}
     </SafeAreaView>
@@ -295,6 +295,24 @@ function criarEvolucao(denuncias: Denuncia[], periodo: number | null): TrendPoin
 
 function evolucaoMaximo(evolucao: TrendPoint[]) {
   return Math.max(...evolucao.map(({ total }) => total), 1);
+}
+
+interface BairroRanking {
+  nome: string;
+  total: number;
+}
+
+function criarRankingBairros(denuncias: Denuncia[]): BairroRanking[] {
+  const totais = new Map<string, number>();
+
+  denuncias.forEach(({ bairro }) => {
+    totais.set(bairro, (totais.get(bairro) ?? 0) + 1);
+  });
+
+  return [...totais.entries()]
+    .map(([nome, total]) => ({ nome, total }))
+    .sort((a, b) => b.total - a.total || a.nome.localeCompare(b.nome))
+    .slice(0, 5);
 }
 
 interface StatCardProps {
@@ -411,7 +429,7 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     gap: 12,
   },
-  chartCard: {
+  panel: {
     padding: 16,
     borderRadius: 16,
     backgroundColor: AppColors.surface,
@@ -489,6 +507,35 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: AppColors.secondaryText,
     textAlign: 'center',
+  },
+  rankingPanel: {
+    paddingVertical: 0,
+  },
+  rankingRow: {
+    minHeight: 52,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F1F5F9',
+  },
+  rankingPosition: {
+    width: 22,
+    fontSize: 14,
+    color: AppColors.actionBlue,
+    fontWeight: '800',
+    textAlign: 'center',
+  },
+  rankingName: {
+    flex: 1,
+    fontSize: 14,
+    color: AppColors.primaryText,
+    fontWeight: '700',
+  },
+  rankingTotal: {
+    fontSize: 12,
+    color: AppColors.secondaryText,
+    fontWeight: '600',
   },
   statCard: {
     width: '48%',
