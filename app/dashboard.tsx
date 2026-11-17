@@ -1,6 +1,12 @@
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { Redirect, Stack, useRouter } from 'expo-router';
-import { useCallback, useEffect, useState, type ComponentProps } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+  type ComponentProps,
+} from 'react';
 import {
   ActivityIndicator,
   Pressable,
@@ -15,6 +21,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { AppColors } from '@/constants/theme';
 import { useAuth } from '@/src/contexts/auth-context';
 import { listarDenuncias } from '@/src/services/denuncias-consulta-service';
+import type { Denuncia } from '@/src/types';
 
 interface DashboardStats {
   total: number;
@@ -30,9 +37,18 @@ const INITIAL_STATS: DashboardStats = {
   rejeitadas: 0,
 };
 
+const PERIOD_OPTIONS = [
+  { label: '7 dias', days: 7 },
+  { label: '30 dias', days: 30 },
+  { label: '90 dias', days: 90 },
+  { label: 'Tudo', days: null },
+] as const;
+
 export default function DashboardRoute() {
   const router = useRouter();
   const { usuario, carregando } = useAuth();
+  const [denuncias, setDenuncias] = useState<Denuncia[]>([]);
+  const [periodo, setPeriodo] = useState<number | null>(7);
   const [stats, setStats] = useState<DashboardStats>(INITIAL_STATS);
   const [carregandoDados, setCarregandoDados] = useState(true);
   const [atualizando, setAtualizando] = useState(false);
@@ -49,6 +65,7 @@ export default function DashboardRoute() {
 
     try {
       const denuncias = await listarDenuncias();
+      setDenuncias(denuncias);
       setStats({
         total: denuncias.length,
         pendentes: denuncias.filter(({ statusDenuncia }) => statusDenuncia === 'pendente').length,
@@ -66,6 +83,11 @@ export default function DashboardRoute() {
       setAtualizando(false);
     }
   }, []);
+
+  const evolucao = useMemo(
+    () => criarEvolucao(denuncias, periodo),
+    [denuncias, periodo]
+  );
 
   useEffect(() => {
     if (usuario?.role !== 'agente') {
@@ -178,10 +200,101 @@ export default function DashboardRoute() {
               backgroundColor="#FEF2F2"
             />
           </View>
+          <Text style={styles.sectionTitle}>Evolução das denúncias</Text>
+          <View style={styles.chartCard}>
+            <View style={styles.periodOptions}>
+              {PERIOD_OPTIONS.map((option) => {
+                const selecionado = periodo === option.days;
+
+                return (
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityState={{ selected: selecionado }}
+                    key={option.label}
+                    onPress={() => setPeriodo(option.days)}
+                    style={[styles.periodButton, selecionado && styles.periodButtonSelected]}>
+                    <Text
+                      style={[
+                        styles.periodButtonText,
+                        selecionado && styles.periodButtonTextSelected,
+                      ]}>
+                      {option.label}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+            {evolucao.length === 0 ? (
+              <View style={styles.chartEmptyState}>
+                <MaterialIcons name="show-chart" size={32} color="#94A3B8" />
+                <Text style={styles.chartEmptyText}>
+                  Nenhuma denúncia no período selecionado.
+                </Text>
+              </View>
+            ) : (
+              <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                <View style={styles.chart}>
+                  <View style={styles.bars}>
+                    {evolucao.map((item) => (
+                      <View style={styles.barColumn} key={item.key}>
+                        <Text style={styles.barValue}>{item.total}</Text>
+                        <View
+                          style={[
+                            styles.bar,
+                            { height: Math.max(8, (item.total / evolucaoMaximo(evolucao)) * 120) },
+                          ]}
+                        />
+                        <Text style={styles.barLabel}>{item.label}</Text>
+                      </View>
+                    ))}
+                  </View>
+                </View>
+              </ScrollView>
+            )}
+          </View>
         </ScrollView>
       )}
     </SafeAreaView>
   );
+}
+
+interface TrendPoint {
+  key: string;
+  label: string;
+  total: number;
+}
+
+function criarEvolucao(denuncias: Denuncia[], periodo: number | null): TrendPoint[] {
+  const agora = new Date();
+  const limite = periodo === null ? null : new Date(agora.getTime() - periodo * 24 * 60 * 60 * 1000);
+  const porDia = new Map<string, number>();
+
+  denuncias.forEach((denuncia) => {
+    if (limite && denuncia.dataCriacao < limite) {
+      return;
+    }
+
+    const data = denuncia.dataCriacao;
+    const chave = `${data.getFullYear()}-${String(data.getMonth() + 1).padStart(2, '0')}-${String(
+      data.getDate()
+    ).padStart(2, '0')}`;
+    porDia.set(chave, (porDia.get(chave) ?? 0) + 1);
+  });
+
+  return [...porDia.entries()]
+    .sort(([primeira], [segunda]) => primeira.localeCompare(segunda))
+    .map(([key, total]) => ({
+      key,
+      total,
+      label: new Intl.DateTimeFormat('pt-BR', {
+        day: '2-digit',
+        month: '2-digit',
+      }).format(new Date(`${key}T12:00:00`)),
+    }));
+}
+
+function evolucaoMaximo(evolucao: TrendPoint[]) {
+  return Math.max(...evolucao.map(({ total }) => total), 1);
 }
 
 interface StatCardProps {
@@ -297,6 +410,85 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 12,
+  },
+  chartCard: {
+    padding: 16,
+    borderRadius: 16,
+    backgroundColor: AppColors.surface,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    shadowColor: AppColors.shadow,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.06,
+    shadowRadius: 3,
+    elevation: 1,
+  },
+  periodOptions: {
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: 20,
+  },
+  periodButton: {
+    paddingHorizontal: 10,
+    paddingVertical: 7,
+    borderRadius: 8,
+    backgroundColor: '#F1F5F9',
+  },
+  periodButtonSelected: {
+    backgroundColor: '#DBEAFE',
+  },
+  periodButtonText: {
+    fontSize: 12,
+    color: AppColors.secondaryText,
+    fontWeight: '700',
+  },
+  periodButtonTextSelected: {
+    color: '#1D4ED8',
+  },
+  chart: {
+    minWidth: 290,
+    paddingTop: 4,
+  },
+  bars: {
+    height: 166,
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    gap: 12,
+    paddingHorizontal: 4,
+  },
+  barColumn: {
+    width: 30,
+    height: 166,
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+  },
+  barValue: {
+    marginBottom: 4,
+    fontSize: 11,
+    color: AppColors.secondaryText,
+    fontWeight: '700',
+  },
+  bar: {
+    width: 20,
+    minHeight: 8,
+    borderRadius: 6,
+    backgroundColor: AppColors.actionBlue,
+  },
+  barLabel: {
+    marginTop: 6,
+    fontSize: 10,
+    color: AppColors.secondaryText,
+  },
+  chartEmptyState: {
+    minHeight: 145,
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 8,
+  },
+  chartEmptyText: {
+    fontSize: 13,
+    color: AppColors.secondaryText,
+    textAlign: 'center',
   },
   statCard: {
     width: '48%',
