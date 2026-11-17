@@ -14,6 +14,7 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  useWindowDimensions,
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -22,31 +23,20 @@ import { AppColors } from '@/constants/theme';
 import { useAuth } from '@/src/contexts/auth-context';
 import { listarDenuncias } from '@/src/services/denuncias-consulta-service';
 import type { Denuncia } from '@/src/types';
-
-interface DashboardStats {
-  total: number;
-  pendentes: number;
-  confirmadas: number;
-  rejeitadas: number;
-}
-
-const INITIAL_STATS: DashboardStats = {
-  total: 0,
-  pendentes: 0,
-  confirmadas: 0,
-  rejeitadas: 0,
-};
-
-const PERIOD_OPTIONS = [
-  { label: '7 dias', days: 7 },
-  { label: '30 dias', days: 30 },
-  { label: '90 dias', days: 90 },
-  { label: 'Tudo', days: null },
-] as const;
+import {
+  criarEvolucao,
+  criarPrioridades,
+  criarRankingBairros,
+  evolucaoMaximo,
+  type DashboardStats,
+  INITIAL_STATS,
+  PERIOD_OPTIONS,
+} from '@/src/features/dashboard/dashboard-utils';
 
 export default function DashboardRoute() {
   const router = useRouter();
   const { usuario, carregando } = useAuth();
+  const { width } = useWindowDimensions();
   const [denuncias, setDenuncias] = useState<Denuncia[]>([]);
   const [periodo, setPeriodo] = useState<number | null>(7);
   const [stats, setStats] = useState<DashboardStats>(INITIAL_STATS);
@@ -90,6 +80,7 @@ export default function DashboardRoute() {
   );
   const rankingBairros = useMemo(() => criarRankingBairros(denuncias), [denuncias]);
   const prioridades = useMemo(() => criarPrioridades(denuncias), [denuncias]);
+  const statCardWidth = width >= 700 ? '23%' : '48%';
   const summaryCards = [
     { icon: 'assignment', label: 'Total', value: stats.total, color: AppColors.actionBlue, backgroundColor: '#EFF6FF' },
     { icon: 'schedule', label: 'Pendentes', value: stats.pendentes, color: AppColors.attention, backgroundColor: '#FFFBEB' },
@@ -158,6 +149,7 @@ export default function DashboardRoute() {
           <Text style={styles.stateTitle}>Não foi possível carregar</Text>
           <Text style={styles.errorText}>{erro}</Text>
           <Pressable
+            accessibilityLabel="Tentar carregar os indicadores novamente"
             accessibilityRole="button"
             onPress={() => carregarDados()}
             style={styles.retryButton}>
@@ -180,33 +172,36 @@ export default function DashboardRoute() {
           <Text style={styles.sectionTitle}>Resumo das denúncias</Text>
           <View style={styles.statsGrid}>
             {summaryCards.map((card) => (
-              <StatCard {...card} key={card.label} />
+              <StatCard {...card} cardWidth={statCardWidth} key={card.label} />
             ))}
           </View>
           <Text style={styles.sectionTitle}>Evolução das denúncias</Text>
           <View style={styles.panel}>
-            <View style={styles.periodOptions}>
-              {PERIOD_OPTIONS.map((option) => {
-                const selecionado = periodo === option.days;
+            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+              <View style={styles.periodOptions}>
+                {PERIOD_OPTIONS.map((option) => {
+                  const selecionado = periodo === option.days;
 
-                return (
-                  <Pressable
-                    accessibilityRole="button"
-                    accessibilityState={{ selected: selecionado }}
-                    key={option.label}
-                    onPress={() => setPeriodo(option.days)}
-                    style={[styles.periodButton, selecionado && styles.periodButtonSelected]}>
-                    <Text
-                      style={[
-                        styles.periodButtonText,
-                        selecionado && styles.periodButtonTextSelected,
-                      ]}>
-                      {option.label}
-                    </Text>
-                  </Pressable>
-                );
-              })}
-            </View>
+                  return (
+                    <Pressable
+                      accessibilityLabel={`Filtrar por ${option.label}`}
+                      accessibilityRole="button"
+                      accessibilityState={{ selected: selecionado }}
+                      key={option.label}
+                      onPress={() => setPeriodo(option.days)}
+                      style={[styles.periodButton, selecionado && styles.periodButtonSelected]}>
+                      <Text
+                        style={[
+                          styles.periodButtonText,
+                          selecionado && styles.periodButtonTextSelected,
+                        ]}>
+                        {option.label}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+            </ScrollView>
             {evolucao.length === 0 ? (
               <View style={styles.chartEmptyState}>
                 <MaterialIcons name="show-chart" size={32} color="#94A3B8" />
@@ -280,98 +275,18 @@ export default function DashboardRoute() {
   );
 }
 
-interface TrendPoint {
-  key: string;
-  label: string;
-  total: number;
-}
-
-function criarEvolucao(denuncias: Denuncia[], periodo: number | null): TrendPoint[] {
-  const agora = new Date();
-  const limite = periodo === null ? null : new Date(agora.getTime() - periodo * 24 * 60 * 60 * 1000);
-  const porDia = new Map<string, number>();
-
-  denuncias.forEach((denuncia) => {
-    if (limite && denuncia.dataCriacao < limite) {
-      return;
-    }
-
-    const data = denuncia.dataCriacao;
-    const chave = `${data.getFullYear()}-${String(data.getMonth() + 1).padStart(2, '0')}-${String(
-      data.getDate()
-    ).padStart(2, '0')}`;
-    porDia.set(chave, (porDia.get(chave) ?? 0) + 1);
-  });
-
-  return [...porDia.entries()]
-    .sort(([primeira], [segunda]) => primeira.localeCompare(segunda))
-    .map(([key, total]) => ({
-      key,
-      total,
-      label: new Intl.DateTimeFormat('pt-BR', {
-        day: '2-digit',
-        month: '2-digit',
-      }).format(new Date(`${key}T12:00:00`)),
-    }));
-}
-
-function evolucaoMaximo(evolucao: TrendPoint[]) {
-  return Math.max(...evolucao.map(({ total }) => total), 1);
-}
-
-interface BairroRanking {
-  nome: string;
-  total: number;
-}
-
-function criarRankingBairros(denuncias: Denuncia[]): BairroRanking[] {
-  const totais = new Map<string, number>();
-
-  denuncias.forEach(({ bairro }) => {
-    totais.set(bairro, (totais.get(bairro) ?? 0) + 1);
-  });
-
-  return [...totais.entries()]
-    .map(([nome, total]) => ({ nome, total }))
-    .sort((a, b) => b.total - a.total || a.nome.localeCompare(b.nome))
-    .slice(0, 5);
-}
-
-interface Prioridade {
-  id: string;
-  bairro: string;
-  tempo: string;
-}
-
-function criarPrioridades(denuncias: Denuncia[]): Prioridade[] {
-  return denuncias
-    .filter(({ statusDenuncia }) => statusDenuncia === 'pendente')
-    .sort((a, b) => a.dataCriacao.getTime() - b.dataCriacao.getTime())
-    .slice(0, 3)
-    .map((denuncia) => ({
-      id: denuncia.id,
-      bairro: denuncia.bairro,
-      tempo: tempoDeEspera(denuncia.dataCriacao),
-    }));
-}
-
-function tempoDeEspera(data: Date): string {
-  const dias = Math.max(0, Math.floor((Date.now() - data.getTime()) / 86_400_000));
-  if (dias === 0) return 'Recebida hoje';
-  return `Aguardando há ${dias} ${dias === 1 ? 'dia' : 'dias'}`;
-}
-
 interface StatCardProps {
   icon: ComponentProps<typeof MaterialIcons>['name'];
   label: string;
   value: number;
   color: string;
   backgroundColor: string;
+  cardWidth: string;
 }
 
-function StatCard({ icon, label, value, color, backgroundColor }: StatCardProps) {
+function StatCard({ icon, label, value, color, backgroundColor, cardWidth }: StatCardProps) {
   return (
-    <View style={styles.statCard}>
+    <View style={[styles.statCard, { width: cardWidth }]}>
       <View style={[styles.statIconBox, { backgroundColor }]}>
         <MaterialIcons name={icon} size={20} color={color} />
       </View>
