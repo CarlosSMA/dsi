@@ -89,6 +89,7 @@ export default function DashboardRoute() {
     [denuncias, periodo]
   );
   const rankingBairros = useMemo(() => criarRankingBairros(denuncias), [denuncias]);
+  const prioridades = useMemo(() => criarPrioridades(denuncias), [denuncias]);
   const summaryCards = [
     { icon: 'assignment', label: 'Total', value: stats.total, color: AppColors.actionBlue, backgroundColor: '#EFF6FF' },
     { icon: 'schedule', label: 'Pendentes', value: stats.pendentes, color: AppColors.attention, backgroundColor: '#FFFBEB' },
@@ -234,6 +235,27 @@ export default function DashboardRoute() {
               </ScrollView>
             )}
           </View>
+          <Text style={styles.sectionTitle}>Prioridades de atendimento</Text>
+          <View style={[styles.panel, styles.rankingPanel]}>
+            {prioridades.length === 0 ? (
+              <View style={styles.noPriority}>
+                <MaterialIcons name="check-circle" size={22} color={AppColors.safe} />
+                <Text style={styles.chartEmptyText}>Nenhuma denúncia pendente.</Text>
+              </View>
+            ) : (
+              prioridades.map((prioridade) => (
+                <View style={styles.priorityRow} key={prioridade.id}>
+                  <MaterialIcons name="priority-high" size={20} color={AppColors.attention} />
+                  <View style={styles.priorityInfo}>
+                    <Text numberOfLines={1} style={styles.rankingName}>
+                      {prioridade.bairro}
+                    </Text>
+                    <Text style={styles.rankingTotal}>{prioridade.tempo}</Text>
+                  </View>
+                </View>
+              ))
+            )}
+          </View>
           <Text style={styles.sectionTitle}>Bairros com mais denúncias</Text>
           <View style={[styles.panel, styles.rankingPanel]}>
             {rankingBairros.length === 0 ? (
@@ -313,6 +335,30 @@ function criarRankingBairros(denuncias: Denuncia[]): BairroRanking[] {
     .map(([nome, total]) => ({ nome, total }))
     .sort((a, b) => b.total - a.total || a.nome.localeCompare(b.nome))
     .slice(0, 5);
+}
+
+interface Prioridade {
+  id: string;
+  bairro: string;
+  tempo: string;
+}
+
+function criarPrioridades(denuncias: Denuncia[]): Prioridade[] {
+  return denuncias
+    .filter(({ statusDenuncia }) => statusDenuncia === 'pendente')
+    .sort((a, b) => a.dataCriacao.getTime() - b.dataCriacao.getTime())
+    .slice(0, 3)
+    .map((denuncia) => ({
+      id: denuncia.id,
+      bairro: denuncia.bairro,
+      tempo: tempoDeEspera(denuncia.dataCriacao),
+    }));
+}
+
+function tempoDeEspera(data: Date): string {
+  const dias = Math.max(0, Math.floor((Date.now() - data.getTime()) / 86_400_000));
+  if (dias === 0) return 'Recebida hoje';
+  return `Aguardando há ${dias} ${dias === 1 ? 'dia' : 'dias'}`;
 }
 
 interface StatCardProps {
@@ -536,6 +582,25 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: AppColors.secondaryText,
     fontWeight: '600',
+  },
+  priorityRow: {
+    minHeight: 58,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F1F5F9',
+  },
+  priorityInfo: {
+    flex: 1,
+    gap: 3,
+  },
+  noPriority: {
+    minHeight: 58,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
   },
   statCard: {
     width: '48%',
