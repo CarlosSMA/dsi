@@ -65,7 +65,9 @@ export function PrefeituraProfileView({ usuario }: PrefeituraProfileViewProps) {
   }
 
   function handleModulePress(moduleName: string) {
-    if (moduleName === 'Mapa Vetorial') {
+    if (moduleName === 'Dashboard') {
+      router.push('/dashboard' as Href);
+    } else if (moduleName === 'Mapa Vetorial') {
       router.replace('/map');
     } else if (moduleName === 'Denúncias') {
       router.push('/denuncias' as Href);
