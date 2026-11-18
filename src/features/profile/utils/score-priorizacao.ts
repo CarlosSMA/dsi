@@ -17,20 +17,31 @@ export const PESOS = {
   pendenteAtrasada: 2,
 };
 
-const DIAS_CONFIRMADA_RECENTE = 30;
-const DIAS_PENDENTE_ATRASADA = 7;
+export const DIAS_CONFIRMADA_RECENTE = 30;
+export const DIAS_PENDENTE_ATRASADA = 7;
 // Com 10 pontos o distrito chega a 63% de risco; com 20, a 86%.
-const PONTOS_ESCALA = 10;
+export const PONTOS_ESCALA = 10;
 
 export const LIMITE_RISCO_ALTO = 70;
 export const LIMITE_RISCO_MEDIO = 40;
 
 export type NivelRisco = 'alto' | 'medio' | 'baixo';
 
+// Cores de cada nível de risco no score de priorização.
+export const NIVEL_CORES: Record<NivelRisco, { cor: string; texto: string; fundo: string; rotulo: string }> = {
+  alto: { cor: '#DC2626', texto: '#B91C1C', fundo: '#FEE2E2', rotulo: 'Alta' },
+  medio: { cor: '#60A5FA', texto: '#2563EB', fundo: '#DBEAFE', rotulo: 'Média' },
+  baixo: { cor: '#10B981', texto: '#059669', fundo: '#D1FAE5', rotulo: 'Baixa' },
+};
+
 export interface DistritoScore {
   rpa: string;
   nome: string;
   zona: string;
+  confirmadasRecentes: number;
+  pendentes: number;
+  pendentesAtrasadas: number;
+  pontos: number;
   risco: number;
   nivel: NivelRisco;
 }
@@ -68,16 +79,27 @@ function rpaDaDenuncia(denuncia: Denuncia): string | undefined {
   return RPA_POR_BAIRRO.get(normalizar(denuncia.bairro));
 }
 
-function pontosDaDenuncia(denuncia: Denuncia, agora: number): number {
+type TipoContagem = 'confirmadasRecentes' | 'pendentes' | 'pendentesAtrasadas';
+
+// Em qual contagem a denúncia entra; undefined quando ela não soma pontos.
+function tipoDaDenuncia(denuncia: Denuncia, agora: number): TipoContagem | undefined {
   const dias = (agora - denuncia.dataCriacao.getTime()) / DIA_MS;
 
   if (denuncia.statusDenuncia === 'confirmada') {
-    return dias <= DIAS_CONFIRMADA_RECENTE ? PESOS.confirmadaRecente : 0;
+    return dias <= DIAS_CONFIRMADA_RECENTE ? 'confirmadasRecentes' : undefined;
   }
   if (denuncia.statusDenuncia === 'pendente') {
-    return dias > DIAS_PENDENTE_ATRASADA ? PESOS.pendenteAtrasada : PESOS.pendente;
+    return dias > DIAS_PENDENTE_ATRASADA ? 'pendentesAtrasadas' : 'pendentes';
   }
-  return 0;
+  return undefined;
+}
+
+export function pontosDoDistrito(contagem: Record<TipoContagem, number>): number {
+  return (
+    contagem.confirmadasRecentes * PESOS.confirmadaRecente +
+    contagem.pendentes * PESOS.pendente +
+    contagem.pendentesAtrasadas * PESOS.pendenteAtrasada
+  );
 }
 
 export function nivelDoRisco(risco: number): NivelRisco {
@@ -89,21 +111,25 @@ export function nivelDoRisco(risco: number): NivelRisco {
 const riscoDosPontos = (pontos: number) => Math.round(100 * (1 - Math.exp(-pontos / PONTOS_ESCALA)));
 
 export function calcularScorePriorizacao(denuncias: Denuncia[], agora = Date.now()): ScorePriorizacao {
-  const pontosPorRpa = new Map<string, number>();
+  const contagemPorRpa = new Map(
+    DISTRITOS.map(({ rpa }) => [rpa, { confirmadasRecentes: 0, pendentes: 0, pendentesAtrasadas: 0 }])
+  );
   let totalConsideradas = 0;
 
   for (const denuncia of denuncias) {
-    const rpa = rpaDaDenuncia(denuncia);
-    const pontos = pontosDaDenuncia(denuncia, agora);
-    if (!rpa || pontos === 0) continue;
+    const contagem = contagemPorRpa.get(rpaDaDenuncia(denuncia) ?? '');
+    const tipo = tipoDaDenuncia(denuncia, agora);
+    if (!contagem || !tipo) continue;
 
     totalConsideradas += 1;
-    pontosPorRpa.set(rpa, (pontosPorRpa.get(rpa) ?? 0) + pontos);
+    contagem[tipo] += 1;
   }
 
   const distritos = DISTRITOS.map((distrito) => {
-    const risco = riscoDosPontos(pontosPorRpa.get(distrito.rpa) ?? 0);
-    return { ...distrito, risco, nivel: nivelDoRisco(risco) };
+    const contagem = contagemPorRpa.get(distrito.rpa)!;
+    const pontos = pontosDoDistrito(contagem);
+    const risco = riscoDosPontos(pontos);
+    return { ...distrito, ...contagem, pontos, risco, nivel: nivelDoRisco(risco) };
   }).sort((a, b) => b.risco - a.risco || a.rpa.localeCompare(b.rpa));
 
   // Score geral: média dos seis distritos, para refletir a situação da cidade inteira.

@@ -16,8 +16,8 @@ import {
   calcularScorePriorizacao,
   LIMITE_RISCO_ALTO,
   LIMITE_RISCO_MEDIO,
+  NIVEL_CORES,
   type DistritoScore,
-  type NivelRisco,
 } from '@/src/features/profile/utils/score-priorizacao';
 import { observarDenuncias } from '@/src/services/denuncias-consulta-service';
 import type { Denuncia, Usuario } from '@/src/types';
@@ -26,13 +26,6 @@ import { useAuth } from '@/src/contexts/auth-context';
 interface PrefeituraProfileViewProps {
   usuario: Usuario;
 }
-
-// Cores de cada nível de risco no score de priorização.
-const NIVEL_CORES: Record<NivelRisco, { cor: string; texto: string; fundo: string; rotulo: string }> = {
-  alto: { cor: '#DC2626', texto: '#B91C1C', fundo: '#FEE2E2', rotulo: 'Alta' },
-  medio: { cor: '#60A5FA', texto: '#2563EB', fundo: '#DBEAFE', rotulo: 'Média' },
-  baixo: { cor: '#10B981', texto: '#059669', fundo: '#D1FAE5', rotulo: 'Baixa' },
-};
 
 // Mostra só os distritos mais críticos, como no protótipo.
 const DISTRITOS_EXIBIDOS = 3;
@@ -84,6 +77,8 @@ export function PrefeituraProfileView({ usuario }: PrefeituraProfileViewProps) {
       router.push('/dashboard' as Href);
     } else if (moduleName === 'Mapa Vetorial') {
       router.replace('/map');
+    } else if (moduleName === 'Score & Pesos') {
+      router.push('/score-pesos' as Href);
     } else if (moduleName === 'Denúncias') {
       router.push('/denuncias' as Href);
     } else {
