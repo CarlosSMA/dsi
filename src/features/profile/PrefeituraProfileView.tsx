@@ -1,6 +1,6 @@
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { Href, Stack, useRouter } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   Alert,
   Pressable,
@@ -12,49 +12,64 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AppColors } from '@/constants/theme';
-import { listarDenuncias } from '@/src/services/denuncias-consulta-service';
-import type { Usuario } from '@/src/types';
+import {
+  calcularScorePriorizacao,
+  LIMITE_RISCO_ALTO,
+  LIMITE_RISCO_MEDIO,
+  type DistritoScore,
+  type NivelRisco,
+} from '@/src/features/profile/utils/score-priorizacao';
+import { observarDenuncias } from '@/src/services/denuncias-consulta-service';
+import type { Denuncia, Usuario } from '@/src/types';
 import { useAuth } from '@/src/contexts/auth-context';
 
 interface PrefeituraProfileViewProps {
   usuario: Usuario;
 }
 
-interface DenunciaStats {
-  abertas: number;
-  confirmadas: number;
-  rejeitadas: number;
-}
+// Cores de cada nível de risco no score de priorização.
+const NIVEL_CORES: Record<NivelRisco, { cor: string; texto: string; fundo: string; rotulo: string }> = {
+  alto: { cor: '#DC2626', texto: '#B91C1C', fundo: '#FEE2E2', rotulo: 'Alta' },
+  medio: { cor: '#60A5FA', texto: '#2563EB', fundo: '#DBEAFE', rotulo: 'Média' },
+  baixo: { cor: '#10B981', texto: '#059669', fundo: '#D1FAE5', rotulo: 'Baixa' },
+};
+
+// Mostra só os distritos mais críticos, como no protótipo.
+const DISTRITOS_EXIBIDOS = 3;
 
 export function PrefeituraProfileView({ usuario }: PrefeituraProfileViewProps) {
   const router = useRouter();
   const { logout } = useAuth();
-  const [stats, setStats] = useState<DenunciaStats>({
-    abertas: 0,
-    confirmadas: 0,
-    rejeitadas: 0,
-  });
+  const [denuncias, setDenuncias] = useState<Denuncia[] | null>(null);
+  const [erroDenuncias, setErroDenuncias] = useState(false);
 
-  useEffect(() => {
-    async function loadStats() {
-      try {
-        const denuncias = await listarDenuncias();
-        const abertas = denuncias.filter(({ statusDenuncia }) => statusDenuncia === 'pendente').length;
-        const confirmadas = denuncias.filter(
-          ({ statusDenuncia }) => statusDenuncia === 'confirmada'
-        ).length;
-        const rejeitadas = denuncias.filter(
-          ({ statusDenuncia }) => statusDenuncia === 'rejeitada'
-        ).length;
+  // Acompanha as denúncias em tempo real: métricas e score se atualizam sozinhos quando algo muda.
+  useEffect(
+    () =>
+      observarDenuncias(
+        (lista) => {
+          setDenuncias(lista);
+          setErroDenuncias(false);
+        },
+        (error) => {
+          console.error('Não foi possível carregar as denúncias.', error);
+          setErroDenuncias(true);
+        }
+      ),
+    []
+  );
 
-        setStats({ abertas, confirmadas, rejeitadas });
-      } catch (error) {
-        console.error('Não foi possível carregar as estatísticas das denúncias.', error);
-      }
-    }
+  const stats = useMemo(() => {
+    const lista = denuncias ?? [];
+    return {
+      abertas: lista.filter(({ statusDenuncia }) => statusDenuncia === 'pendente').length,
+      confirmadas: lista.filter(({ statusDenuncia }) => statusDenuncia === 'confirmada').length,
+      rejeitadas: lista.filter(({ statusDenuncia }) => statusDenuncia === 'rejeitada').length,
+    };
+  }, [denuncias]);
 
-    loadStats();
-  }, []);
+  const score = useMemo(() => calcularScorePriorizacao(denuncias ?? []), [denuncias]);
+  const distritosExibidos = score.distritos.slice(0, DISTRITOS_EXIBIDOS);
 
   function handleDispatchDistrict(districtName: string) {
     Alert.alert(
@@ -150,73 +165,35 @@ export function PrefeituraProfileView({ usuario }: PrefeituraProfileViewProps) {
         </View>
 
         <View style={styles.scoreCard}>
-          {/* Linha do Score Geral */}
-          <View style={styles.scoreTopRow}>
-            <Text style={styles.scoreLabel}>Score Geral de Risco</Text>
-            <Text style={styles.scoreValue}>78/100</Text>
+          {/* Score geral da cidade */}
+          <View style={styles.scoreSummary}>
+            <View style={styles.scoreTopRow}>
+              <Text style={styles.scoreLabel}>Score Geral de Risco</Text>
+              <Text style={[styles.scoreValue, { color: NIVEL_CORES[score.nivelGeral].texto }]}>
+                {denuncias ? `${score.geral}/100` : '–/100'}
+              </Text>
+            </View>
+            <ScoreBar valor={score.geral} />
           </View>
 
-          {/* Barra de Progresso Tricolor */}
-          <View style={styles.progressBarContainer}>
-            <View style={[styles.progressSegment, { flex: 33, backgroundColor: '#10B981' }]} />
-            <View style={[styles.progressSegment, { flex: 33, backgroundColor: '#60A5FA' }]} />
-            <View style={[styles.progressSegment, { flex: 34, backgroundColor: '#DC2626' }]} />
-          </View>
-
-          {/* Lista de Distritos */}
-          <View style={styles.districtsList}>
-            {/* Distrito II */}
-            <View style={[styles.districtCard, { borderLeftColor: '#DC2626' }]}>
-              <View style={styles.districtInfo}>
-                <View style={styles.districtNameRow}>
-                  <Text style={styles.districtName}>Distrito II</Text>
-                  <Text style={styles.districtZone}> (Zona Norte)</Text>
-                </View>
-                <Text style={[styles.districtRiskText, { color: '#DC2626' }]}>
-                  88% risco alto
-                </Text>
-              </View>
-              <Pressable
-                accessibilityRole="button"
-                style={styles.dispatchButton}
-                onPress={() => handleDispatchDistrict('Distrito II (Zona Norte)')}>
-                <MaterialIcons name="campaign" size={16} color="#FFFFFF" />
-                <Text style={styles.dispatchButtonText}>Despachar</Text>
-              </Pressable>
+          {/* Distritos mais críticos */}
+          {erroDenuncias ? (
+            <Text style={styles.scoreEmpty}>Não foi possível carregar as denúncias para calcular o score.</Text>
+          ) : !denuncias ? (
+            <Text style={styles.scoreEmpty}>Calculando o score...</Text>
+          ) : score.totalConsideradas === 0 ? (
+            <Text style={styles.scoreEmpty}>Nenhuma denúncia em aberto ou foco confirmado recente nos distritos.</Text>
+          ) : (
+            <View style={styles.districtsList}>
+              {distritosExibidos.map((distrito) => (
+                <DistritoRow
+                  key={distrito.rpa}
+                  distrito={distrito}
+                  onDispatch={() => handleDispatchDistrict(`${distrito.nome} (${distrito.zona})`)}
+                />
+              ))}
             </View>
-
-            {/* Distrito IV */}
-            <View style={[styles.districtCard, { borderLeftColor: '#3B82F6' }]}>
-              <View style={styles.districtInfo}>
-                <View style={styles.districtNameRow}>
-                  <Text style={styles.districtName}>Distrito IV</Text>
-                  <Text style={styles.districtZone}> (Caxangá/Iputinga)</Text>
-                </View>
-                <Text style={[styles.districtRiskText, { color: '#2563EB' }]}>
-                  54% risco
-                </Text>
-              </View>
-              <View style={[styles.districtBadge, { backgroundColor: '#EFF6FF' }]}>
-                <Text style={[styles.districtBadgeText, { color: '#2563EB' }]}>Média</Text>
-              </View>
-            </View>
-
-            {/* Distrito VI */}
-            <View style={[styles.districtCard, { borderLeftColor: '#10B981' }]}>
-              <View style={styles.districtInfo}>
-                <View style={styles.districtNameRow}>
-                  <Text style={styles.districtName}>Distrito VI</Text>
-                  <Text style={styles.districtZone}> (Boa Viagem)</Text>
-                </View>
-                <Text style={[styles.districtRiskText, { color: '#059669' }]}>
-                  18% risco
-                </Text>
-              </View>
-              <View style={[styles.districtBadge, { backgroundColor: '#ECFDF5' }]}>
-                <Text style={[styles.districtBadgeText, { color: '#059669' }]}>Baixa</Text>
-              </View>
-            </View>
-          </View>
+          )}
         </View>
 
         {/* Seção: Módulos de Gestão */}
@@ -327,6 +304,55 @@ export function PrefeituraProfileView({ usuario }: PrefeituraProfileViewProps) {
         </Pressable>
       </View>
     </SafeAreaView>
+  );
+}
+
+// Barra do score geral: preenche até o valor, verde até o limite de risco médio, azul até o alto e vermelho acima.
+function ScoreBar({ valor }: { valor: number }) {
+  const verde = Math.min(valor, LIMITE_RISCO_MEDIO);
+  const azul = Math.min(Math.max(valor - LIMITE_RISCO_MEDIO, 0), LIMITE_RISCO_ALTO - LIMITE_RISCO_MEDIO);
+  const vermelho = Math.max(valor - LIMITE_RISCO_ALTO, 0);
+
+  return (
+    <View
+      style={styles.progressBarContainer}
+      accessibilityRole="progressbar"
+      accessibilityValue={{ min: 0, max: 100, now: valor }}>
+      {verde > 0 && <View style={[styles.progressSegment, { flex: verde, backgroundColor: NIVEL_CORES.baixo.cor }]} />}
+      {azul > 0 && <View style={[styles.progressSegment, { flex: azul, backgroundColor: NIVEL_CORES.medio.cor }]} />}
+      {vermelho > 0 && (
+        <View style={[styles.progressSegment, { flex: vermelho, backgroundColor: NIVEL_CORES.alto.cor }]} />
+      )}
+      {valor < 100 && <View style={{ flex: 100 - valor }} />}
+    </View>
+  );
+}
+
+function DistritoRow({ distrito, onDispatch }: { distrito: DistritoScore; onDispatch: () => void }) {
+  const cores = NIVEL_CORES[distrito.nivel];
+
+  return (
+    <View style={[styles.districtCard, { borderLeftColor: cores.cor }]}>
+      <View style={styles.districtInfo}>
+        <View style={styles.districtNameRow}>
+          <Text style={styles.districtName}>{distrito.nome}</Text>
+          <Text style={styles.districtZone}> ({distrito.zona})</Text>
+        </View>
+        <Text style={[styles.districtRiskText, { color: cores.texto }]}>
+          {distrito.risco}% risco{distrito.nivel === 'alto' ? ' alto' : ''}
+        </Text>
+      </View>
+      {distrito.nivel === 'alto' ? (
+        <Pressable accessibilityRole="button" style={styles.dispatchButton} onPress={onDispatch}>
+          <MaterialIcons name="campaign" size={16} color="#FFFFFF" />
+          <Text style={styles.dispatchButtonText}>Despachar</Text>
+        </Pressable>
+      ) : (
+        <View style={[styles.districtBadge, { backgroundColor: cores.fundo }]}>
+          <Text style={[styles.districtBadgeText, { color: cores.texto }]}>{cores.rotulo}</Text>
+        </View>
+      )}
+    </View>
   );
 }
 
@@ -474,6 +500,18 @@ const styles = StyleSheet.create({
     elevation: 2,
     marginBottom: 20,
   },
+  scoreSummary: {
+    backgroundColor: '#F1F5F9',
+    borderRadius: 14,
+    padding: 12,
+    marginBottom: 12,
+  },
+  scoreEmpty: {
+    fontSize: 13,
+    color: AppColors.secondaryText,
+    textAlign: 'center',
+    paddingVertical: 8,
+  },
   scoreTopRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -488,14 +526,13 @@ const styles = StyleSheet.create({
   scoreValue: {
     fontSize: 16,
     fontWeight: '800',
-    color: '#DC2626',
   },
   progressBarContainer: {
     height: 8,
     borderRadius: 4,
     flexDirection: 'row',
     overflow: 'hidden',
-    marginBottom: 14,
+    backgroundColor: AppColors.inactive,
   },
   progressSegment: {
     height: '100%',
@@ -504,10 +541,8 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   districtCard: {
-    backgroundColor: '#F8FAFC',
+    backgroundColor: '#F1F5F9',
     borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
     borderLeftWidth: 4,
     paddingVertical: 12,
     paddingHorizontal: 14,
