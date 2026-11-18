@@ -118,7 +118,7 @@ export default function ProfileScreen() {
             <Text style={styles.city}>RECIFE</Text>
           </View>
           <View style={styles.activeBadge}>
-            <MaterialIcons name="verified-user" size={13} color={AppColors.securityBlue} />
+            <MaterialIcons name="verified-user" size={15} color={AppColors.securityBlue} />
             <Text style={styles.activeLabel}>Ativo</Text>
           </View>
         </View>
@@ -130,11 +130,11 @@ export default function ProfileScreen() {
           <View style={styles.userCopy}>
             <Text style={styles.greeting}>Olá, {usuario.nome}!</Text>
             <Text style={styles.userMeta}>
-              <MaterialIcons name="person-outline" size={13} color={AppColors.actionBlue} />{' '}
+              <MaterialIcons name="person-outline" size={15} color={AppColors.actionBlue} />{' '}
               {roleLabel} • {usuario.email || 'Perfil ativo'}
             </Text>
             <View style={styles.levelBadge}>
-              <MaterialIcons name="public" size={11} color={AppColors.securityBlue} />
+              <MaterialIcons name="public" size={13} color={AppColors.securityBlue} />
               <Text style={styles.levelLabel}>
                 {usuario.numero_matricula || usuario.cpf || 'Cadastro ativo'}
               </Text>
@@ -148,7 +148,7 @@ export default function ProfileScreen() {
           onPress={() => router.push('/minhas-denuncias')}
           style={({ pressed }) => [styles.reportCard, pressed && styles.reportCardPressed]}>
           <View style={styles.cardIconBlue}>
-            <MaterialIcons name="assignment" size={21} color={AppColors.actionBlue} />
+            <MaterialIcons name="assignment" size={24} color={AppColors.actionBlue} />
           </View>
           <View style={styles.reportCopy}>
             <View style={styles.reportTitleRow}>
@@ -171,7 +171,7 @@ export default function ProfileScreen() {
                       }`}
             </Text>
           </View>
-          <MaterialIcons name="chevron-right" size={22} color={AppColors.secondaryText} />
+          <MaterialIcons name="chevron-right" size={24} color={AppColors.secondaryText} />
         </Pressable>
 
         <View style={styles.metricsRow}>
@@ -208,13 +208,14 @@ export default function ProfileScreen() {
             title="Encerrar Sessão"
             subtitle="Desconectar conta com segurança deste dispositivo"
             destructive
+            last
             onPress={handleLogout}
           />
         </View>
 
         <View style={styles.footer}>
           <View style={styles.footerBrandRow}>
-            <MaterialIcons name="local-hospital" size={13} color={AppColors.actionBlue} />
+            <MaterialIcons name="local-hospital" size={15} color={AppColors.actionBlue} />
             <Text style={styles.footerStrong}>SUS</Text>
             <Text style={styles.footerDot}>•</Text>
             <Text style={styles.footerText}>Prefeitura do Recife</Text>
@@ -285,7 +286,7 @@ function MetricCard({ label, value, icon, valueColor }: MetricCardProps) {
     <View style={styles.metricCard}>
       <View style={styles.metricHeader}>
         <Text style={styles.metricLabel}>{label}</Text>
-        <MaterialIcons name={icon} size={16} color={icon === 'warning-amber' ? AppColors.attention : AppColors.actionBlue} />
+        <MaterialIcons name={icon} size={20} color={icon === 'warning-amber' ? AppColors.attention : AppColors.actionBlue} />
       </View>
       <Text style={[styles.metricValue, { color: valueColor }]}>{value}</Text>
     </View>
@@ -298,16 +299,21 @@ interface ActionRowProps {
   subtitle: string;
   badge?: string;
   destructive?: boolean;
+  // Último item do card: sem a linha divisória embaixo.
+  last?: boolean;
   onPress?: () => void;
 }
 
-function ActionRow({ icon, title, subtitle, badge, destructive = false, onPress }: ActionRowProps) {
+function ActionRow({ icon, title, subtitle, badge, destructive = false, last = false, onPress }: ActionRowProps) {
   const color = destructive ? AppColors.highRisk : AppColors.actionBlue;
 
   return (
-    <Pressable style={styles.actionRow} accessibilityRole="button" onPress={onPress}>
+    <Pressable
+      style={({ pressed }) => [styles.actionRow, last && styles.actionRowLast, pressed && styles.actionRowPressed]}
+      accessibilityRole="button"
+      onPress={onPress}>
       <View style={[styles.actionIcon, destructive && styles.destructiveIcon]}>
-        <MaterialIcons name={icon} size={19} color={color} />
+        <MaterialIcons name={icon} size={22} color={color} />
       </View>
       <View style={styles.actionCopy}>
         <View style={styles.actionTitleRow}>
@@ -316,7 +322,7 @@ function ActionRow({ icon, title, subtitle, badge, destructive = false, onPress 
         </View>
         <Text style={styles.actionSubtitle}>{subtitle}</Text>
       </View>
-      <MaterialIcons name="chevron-right" size={21} color={destructive ? AppColors.highRisk : AppColors.secondaryText} />
+      <MaterialIcons name="chevron-right" size={24} color={destructive ? AppColors.highRisk : AppColors.secondaryText} />
     </Pressable>
   );
 }
@@ -339,23 +345,24 @@ const styles = StyleSheet.create({
   },
   content: {
     flexGrow: 1,
-    paddingHorizontal: 16,
-    paddingTop: 10,
-    paddingBottom: 34,
-    gap: 12,
+    paddingHorizontal: 20,
+    paddingTop: 12,
+    paddingBottom: 28,
+    gap: 16,
   },
   header: {
-    minHeight: 58,
+    minHeight: 68,
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 4,
+    paddingBottom: 10,
     borderBottomWidth: 1,
     borderBottomColor: '#E2E8F0',
   },
   logo: {
-    width: 32,
-    height: 40,
-    marginRight: 6,
+    width: 38,
+    height: 48,
+    marginRight: 8,
   },
   brandBlock: {
     flex: 1,
@@ -363,109 +370,109 @@ const styles = StyleSheet.create({
   brandName: {
     color: AppColors.primaryText,
     fontFamily: Fonts?.sans,
-    fontSize: 17,
+    fontSize: 21,
     fontWeight: '700',
   },
   city: {
     color: AppColors.actionBlue,
-    fontSize: 8,
+    fontSize: 10,
     fontWeight: '700',
-    letterSpacing: 0.8,
+    letterSpacing: 1,
   },
   activeBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 9,
-    paddingVertical: 5,
-    borderRadius: 12,
+    gap: 5,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 14,
     backgroundColor: '#EEF2FF',
   },
   activeLabel: {
     color: AppColors.securityBlue,
-    fontSize: 10,
+    fontSize: 13,
     fontWeight: '600',
   },
   userCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    minHeight: 92,
-    padding: 12,
-    borderRadius: 13,
+    minHeight: 120,
+    padding: 18,
+    borderRadius: 18,
     backgroundColor: AppColors.surface,
     shadowColor: AppColors.shadow,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
-    shadowRadius: 5,
+    shadowRadius: 6,
     elevation: 2,
   },
   avatar: {
-    width: 58,
-    height: 58,
+    width: 76,
+    height: 76,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 11,
-    borderRadius: 29,
+    marginRight: 16,
+    borderRadius: 38,
     borderWidth: 3,
     borderColor: '#BFDBFE',
     backgroundColor: '#DBEAFE',
   },
   avatarLabel: {
     color: AppColors.securityBlue,
-    fontSize: 17,
+    fontSize: 24,
     fontWeight: '800',
   },
   userCopy: {
     flex: 1,
-    gap: 4,
+    gap: 6,
   },
   greeting: {
     color: AppColors.primaryText,
     fontFamily: Fonts?.sans,
-    fontSize: 17,
+    fontSize: 21,
     fontWeight: '700',
   },
   userMeta: {
     color: AppColors.secondaryText,
-    fontSize: 11,
+    fontSize: 13,
   },
   levelBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     alignSelf: 'flex-start',
-    gap: 4,
-    paddingHorizontal: 6,
-    paddingVertical: 3,
-    borderRadius: 4,
+    gap: 5,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
     backgroundColor: '#EEF2FF',
   },
   levelLabel: {
     color: AppColors.securityBlue,
-    fontSize: 9,
+    fontSize: 12,
   },
   reportCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    minHeight: 70,
-    padding: 12,
-    borderRadius: 13,
+    minHeight: 88,
+    padding: 18,
+    borderRadius: 18,
     backgroundColor: AppColors.surface,
     shadowColor: AppColors.shadow,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.04,
-    shadowRadius: 4,
+    shadowRadius: 5,
     elevation: 1,
   },
   reportCardPressed: {
     backgroundColor: '#F1F5F9',
   },
   cardIconBlue: {
-    width: 34,
-    height: 34,
+    width: 44,
+    height: 44,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 10,
-    borderRadius: 10,
+    marginRight: 14,
+    borderRadius: 12,
     backgroundColor: '#E0E7FF',
   },
   reportCopy: {
@@ -474,37 +481,44 @@ const styles = StyleSheet.create({
   reportTitleRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 7,
+    gap: 8,
   },
   reportTitle: {
     color: AppColors.primaryText,
-    fontSize: 14,
+    fontSize: 17,
     fontWeight: '700',
   },
   reportCount: {
-    paddingHorizontal: 6,
+    paddingHorizontal: 8,
     paddingVertical: 2,
-    borderRadius: 8,
+    borderRadius: 9,
+    overflow: 'hidden',
     backgroundColor: '#DBEAFE',
     color: AppColors.securityBlue,
-    fontSize: 8,
+    fontSize: 12,
     fontWeight: '800',
   },
   reportSubtitle: {
-    marginTop: 3,
+    marginTop: 4,
     color: AppColors.secondaryText,
-    fontSize: 10,
+    fontSize: 13,
   },
   metricsRow: {
     flexDirection: 'row',
-    gap: 8,
+    gap: 12,
   },
   metricCard: {
     flex: 1,
-    minHeight: 70,
-    padding: 10,
-    borderRadius: 12,
+    minHeight: 104,
+    padding: 16,
+    borderRadius: 18,
+    justifyContent: 'space-between',
     backgroundColor: AppColors.surface,
+    shadowColor: AppColors.shadow,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 5,
+    elevation: 1,
   },
   metricHeader: {
     flexDirection: 'row',
@@ -514,33 +528,45 @@ const styles = StyleSheet.create({
   metricLabel: {
     flex: 1,
     color: '#475569',
-    fontSize: 10,
+    fontSize: 13,
   },
   metricValue: {
-    marginTop: 6,
-    fontSize: 19,
-    fontWeight: '700',
+    marginTop: 10,
+    fontSize: 28,
+    fontWeight: '800',
   },
   actionList: {
     overflow: 'hidden',
-    borderRadius: 13,
+    borderRadius: 18,
     backgroundColor: AppColors.surface,
+    shadowColor: AppColors.shadow,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 5,
+    elevation: 1,
   },
   actionRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    minHeight: 63,
-    paddingHorizontal: 12,
+    minHeight: 68,
+    paddingHorizontal: 18,
+    paddingVertical: 10,
     borderBottomWidth: 1,
     borderBottomColor: '#E2E8F0',
   },
+  actionRowLast: {
+    borderBottomWidth: 0,
+  },
+  actionRowPressed: {
+    backgroundColor: '#F1F5F9',
+  },
   actionIcon: {
-    width: 32,
-    height: 32,
+    width: 42,
+    height: 42,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 10,
-    borderRadius: 9,
+    marginRight: 14,
+    borderRadius: 12,
     backgroundColor: '#EEF2FF',
   },
   destructiveIcon: {
@@ -552,34 +578,35 @@ const styles = StyleSheet.create({
   actionTitleRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: 8,
   },
   actionTitle: {
     color: AppColors.primaryText,
-    fontSize: 12,
+    fontSize: 16,
     fontWeight: '700',
   },
   destructiveText: {
     color: AppColors.highRisk,
   },
   actionSubtitle: {
-    marginTop: 3,
+    marginTop: 4,
     color: AppColors.secondaryText,
-    fontSize: 9,
+    fontSize: 13,
   },
   newBadge: {
-    paddingHorizontal: 5,
+    paddingHorizontal: 7,
     paddingVertical: 2,
-    borderRadius: 7,
+    borderRadius: 8,
+    overflow: 'hidden',
     backgroundColor: '#B91C1C',
     color: AppColors.surface,
-    fontSize: 8,
+    fontSize: 11,
     fontWeight: '700',
   },
   footer: {
     alignItems: 'center',
     marginTop: 'auto',
-    paddingTop: 18,
+    paddingTop: 24,
   },
   footerBrandRow: {
     flexDirection: 'row',
@@ -588,21 +615,21 @@ const styles = StyleSheet.create({
   },
   footerStrong: {
     color: AppColors.primaryText,
-    fontSize: 10,
+    fontSize: 13,
     fontWeight: '700',
   },
   footerDot: {
     color: AppColors.secondaryText,
-    fontSize: 10,
+    fontSize: 13,
   },
   footerText: {
     color: AppColors.secondaryText,
-    fontSize: 10,
+    fontSize: 13,
   },
   footerCaption: {
     marginTop: 5,
     color: '#94A3B8',
-    fontSize: 9,
+    fontSize: 12,
   },
   bottomNav: {
     minHeight: 62,
@@ -624,7 +651,7 @@ const styles = StyleSheet.create({
   },
   navLabel: {
     color: AppColors.secondaryText,
-    fontSize: 10,
+    fontSize: 12,
   },
   navLabelSelected: {
     color: AppColors.actionBlue,
