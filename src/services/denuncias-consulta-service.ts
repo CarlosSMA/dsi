@@ -1,6 +1,7 @@
 import {
   collection,
   getDocs,
+  onSnapshot,
   query,
   where,
   type DocumentData,
@@ -92,6 +93,27 @@ export async function listarDenuncias(): Promise<Denuncia[]> {
   const snapshot = await getDocs(collection(db, 'denuncias'));
 
   return ordenarDenuncias(snapshot.docs.map(toDenuncia));
+}
+
+/**
+ * Acompanha todas as denúncias em tempo real: chama `onChange` com a lista atualizada a cada mudança no Firestore.
+ * Devolve a função que encerra o acompanhamento (chamar ao sair da tela).
+ */
+export function observarDenuncias(
+  onChange: (denuncias: Denuncia[]) => void,
+  onError: (error: Error) => void
+): () => void {
+  return onSnapshot(
+    collection(db, 'denuncias'),
+    (snapshot) => {
+      try {
+        onChange(ordenarDenuncias(snapshot.docs.map(toDenuncia)));
+      } catch (error) {
+        onError(error instanceof Error ? error : new Error(String(error)));
+      }
+    },
+    onError
+  );
 }
 
 export async function listarMinhasDenuncias(usuarioId: string): Promise<Denuncia[]> {
