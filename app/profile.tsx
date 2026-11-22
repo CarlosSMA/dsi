@@ -1,5 +1,5 @@
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-import { Redirect, Stack, useRouter } from 'expo-router';
+import { type Href, Redirect, Stack, useRouter } from 'expo-router';
 import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
@@ -145,7 +145,7 @@ export default function ProfileScreen() {
         <Pressable
           accessibilityLabel="Abrir minhas denúncias"
           accessibilityRole="button"
-          onPress={() => router.push('/minhas-denuncias')}
+          onPress={() => router.push('/minhas-denuncias' as Href)}
           style={({ pressed }) => [styles.reportCard, pressed && styles.reportCardPressed]}>
           <View style={styles.cardIconBlue}>
             <MaterialIcons name="assignment" size={24} color={AppColors.actionBlue} />

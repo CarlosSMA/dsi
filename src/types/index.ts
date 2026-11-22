@@ -32,6 +32,7 @@ export interface Denuncia {
   };
   bairro: string;
   urlFoto?: string;
+  urlsFotos?: string[];
   dataCriacao: Date;
 }
 
