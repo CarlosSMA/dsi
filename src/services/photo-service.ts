@@ -17,6 +17,12 @@ export interface UploadedPhoto {
   url: string;
 }
 
+export interface PhotoToUpload {
+  uri: string;
+  fileName?: string | null;
+  mimeType?: string | null;
+}
+
 export async function uploadReportPhoto({
   uri,
   userId,
@@ -50,12 +56,42 @@ export async function uploadReportPhoto({
   return { path, url: signedUrlData.signedUrl };
 }
 
+/**
+ * Realiza o upload assíncrono em lote de múltiplas fotos comprobatórias da denúncia para o Supabase Storage.
+ */
+export async function uploadMultipleReportPhotos(
+  photos: PhotoToUpload[],
+  userId: string,
+  reportId: string
+): Promise<UploadedPhoto[]> {
+  if (!photos || photos.length === 0) {
+    return [];
+  }
+
+  const uploadPromises = photos.map((photo, index) =>
+    uploadReportPhoto({
+      uri: photo.uri,
+      userId,
+      reportId: `${reportId}_${index + 1}`,
+      fileName: photo.fileName,
+      mimeType: photo.mimeType,
+    })
+  );
+
+  return Promise.all(uploadPromises);
+}
+
 export async function removeReportPhoto(path: string): Promise<void> {
   const supabase = getSupabase();
   const { error } = await supabase.storage.from(photoBucket).remove([path]);
   if (error) {
     console.error('Erro ao remover foto órfã do Supabase:', error);
   }
+}
+
+export async function removeMultipleReportPhotos(paths: string[]): Promise<void> {
+  if (!paths || paths.length === 0) return;
+  await Promise.all(paths.map((p) => removeReportPhoto(p)));
 }
 
 function getFileExtension(fileName?: string | null, mimeType?: string | null): string {

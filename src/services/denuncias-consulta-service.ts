@@ -74,6 +74,16 @@ function toDenuncia(snapshot: DocumentSnapshot<DocumentData>): Denuncia {
     throw new Error(`A denúncia ${denunciaId} possui uma localização inválida.`);
   }
 
+  const urlsFotos = Array.isArray(data.urlsFotos)
+    ? data.urlsFotos.filter((u: unknown): u is string => typeof u === 'string' && u.trim().length > 0)
+    : typeof data.urlFoto === 'string' && data.urlFoto.trim().length > 0
+      ? [data.urlFoto.trim()]
+      : [];
+
+  const urlFoto = typeof data.urlFoto === 'string' && data.urlFoto.trim().length > 0
+    ? data.urlFoto.trim()
+    : urlsFotos[0];
+
   return {
     id: denunciaId,
     id_denunciador: data.id_denunciador,
@@ -84,7 +94,8 @@ function toDenuncia(snapshot: DocumentSnapshot<DocumentData>): Denuncia {
       longitude: data.localizacao.longitude,
     },
     bairro: data.bairro.trim(),
-    urlFoto: typeof data.urlFoto === 'string' && data.urlFoto ? data.urlFoto : undefined,
+    urlFoto,
+    urlsFotos,
     dataCriacao: toDate(data.dataCriacao, denunciaId),
   };
 }

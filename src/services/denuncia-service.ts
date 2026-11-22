@@ -9,13 +9,14 @@ import {
 import { db } from './firebase';
 import type { StatusDenuncia } from '@/src/types';
 
-interface CriarDenunciaParams {
+export interface CriarDenunciaParams {
   id?: string;
   id_denunciador: string;
   latitude: number;
   longitude: number;
   bairro: string;
-  urlFoto: string;
+  urlFoto?: string;
+  urlsFotos?: string[];
 }
 
 export async function registrarDenuncia({
@@ -25,6 +26,7 @@ export async function registrarDenuncia({
   longitude,
   bairro,
   urlFoto,
+  urlsFotos,
 }: CriarDenunciaParams): Promise<string> {
   if (!id_denunciador) {
     throw new Error('Não é possível registrar denúncia sem id_denunciador (usuário não autenticado).');
@@ -34,13 +36,23 @@ export async function registrarDenuncia({
     throw new Error('Não foi possível identificar o bairro da ocorrência.');
   }
 
+  const fotosArray =
+    Array.isArray(urlsFotos) && urlsFotos.length > 0
+      ? urlsFotos
+      : urlFoto && urlFoto.trim().length > 0
+        ? [urlFoto.trim()]
+        : [];
+
+  const fotoPrincipal = fotosArray[0] || urlFoto || '';
+
   const docRef = id ? doc(db, 'denuncias', id) : doc(collection(db, 'denuncias'));
   await setDoc(docRef, {
     id: docRef.id,
     id_denunciador,
     localizacao: new GeoPoint(latitude, longitude),
     bairro: bairro.trim(),
-    urlFoto,
+    urlFoto: fotoPrincipal,
+    urlsFotos: fotosArray,
     statusDenuncia: 'pendente',
     dataCriacao: serverTimestamp(),
   });
