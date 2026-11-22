@@ -1,3 +1,19 @@
+import {
+  collection,
+  doc,
+  GeoPoint,
+  getDocs,
+  onSnapshot,
+  query,
+  serverTimestamp,
+  setDoc,
+  updateDoc,
+  where,
+  type DocumentData,
+  type DocumentSnapshot,
+  type Timestamp,
+} from 'firebase/firestore';
+import { db } from '@/src/services/firebase';
 import type { Denuncia as IDenuncia, StatusDenuncia } from '@/src/types';
 
 export interface LocalizacaoCoords {
@@ -13,7 +29,7 @@ export interface LocalizacaoCoords {
  * - Suporte a múltiplas fotos do foco (carrossel) com compatibilidade retroativa;
  * - Métodos de negócio para validação, formatação e verificação de ciclo de vida.
  */
-export class DenunciaModel implements IDenuncia {
+export class Denuncia implements IDenuncia {
   public id: string;
   public id_denunciador: string;
   public id_revisor?: string;
@@ -170,3 +186,240 @@ export class DenunciaModel implements IDenuncia {
     };
   }
 }
+
+export interface CriarDenunciaParams {
+  id?: string;
+  id_denunciador: string;
+  latitude: number;
+  longitude: number;
+  bairro: string;
+  urlFoto?: string;
+  urlsFotos?: string[];
+}
+
+export class Denuncias {
+  private static readonly STATUS_VALIDOS: StatusDenuncia[] = [
+    'pendente',
+    'confirmada',
+    'rejeitada',
+  ];
+
+  static async registrar({
+    id,
+    id_denunciador,
+    latitude,
+    longitude,
+    bairro,
+    urlFoto,
+    urlsFotos,
+  }: CriarDenunciaParams): Promise<string> {
+    if (!id_denunciador) {
+      throw new Error('Não é possível registrar denúncia sem id_denunciador (usuário não autenticado).');
+    }
+
+    if (!bairro || bairro.trim().length < 2) {
+      throw new Error('Não foi possível identificar o bairro da ocorrência.');
+    }
+
+    const fotosArray =
+      Array.isArray(urlsFotos) && urlsFotos.length > 0
+        ? urlsFotos
+        : urlFoto && urlFoto.trim().length > 0
+          ? [urlFoto.trim()]
+          : [];
+
+    const fotoPrincipal = fotosArray[0] || urlFoto || '';
+    const docRef = id ? doc(db, 'denuncias', id) : doc(collection(db, 'denuncias'));
+
+    await setDoc(docRef, {
+      id: docRef.id,
+      id_denunciador,
+      localizacao: new GeoPoint(latitude, longitude),
+      bairro: bairro.trim(),
+      urlFoto: fotoPrincipal,
+      urlsFotos: fotosArray,
+      statusDenuncia: 'pendente',
+      dataCriacao: serverTimestamp(),
+    });
+
+    return docRef.id;
+  }
+
+  static async revisar(
+    denunciaId: string,
+    statusDenuncia: Extract<StatusDenuncia, 'confirmada' | 'rejeitada'>,
+    idRevisor: string
+  ): Promise<void> {
+    if (!denunciaId.trim()) {
+      throw new Error('Não é possível revisar uma denúncia sem identificá-la.');
+    }
+
+    if (!idRevisor.trim()) {
+      throw new Error('Não é possível revisar uma denúncia sem identificar o agente.');
+    }
+
+    await updateDoc(doc(db, 'denuncias', denunciaId), {
+      statusDenuncia,
+      id_revisor: idRevisor,
+    });
+  }
+
+  static async listar(): Promise<Denuncia[]> {
+    const snapshot = await getDocs(collection(db, 'denuncias'));
+    return Denuncias.ordenar(snapshot.docs.map((item) => Denuncias.fromSnapshot(item)));
+  }
+
+  static observar(
+    onChange: (denuncias: Denuncia[]) => void,
+    onError: (error: Error) => void
+  ): () => void {
+    return onSnapshot(
+      collection(db, 'denuncias'),
+      (snapshot) => {
+        try {
+          onChange(Denuncias.ordenar(snapshot.docs.map((item) => Denuncias.fromSnapshot(item))));
+        } catch (error) {
+          onError(error instanceof Error ? error : new Error(String(error)));
+        }
+      },
+      onError
+    );
+  }
+
+  static async listarMinhas(usuarioId: string): Promise<Denuncia[]> {
+    const usuarioIdNormalizado = usuarioId.trim();
+
+    if (!usuarioIdNormalizado) {
+      throw new Error('Não é possível listar denúncias sem identificar o usuário.');
+    }
+
+    const denunciasQuery = query(
+      collection(db, 'denuncias'),
+      where('id_denunciador', '==', usuarioIdNormalizado)
+    );
+    const snapshot = await getDocs(denunciasQuery);
+    return Denuncias.ordenar(snapshot.docs.map((item) => Denuncias.fromSnapshot(item)));
+  }
+
+  static registrarDenuncia(params: CriarDenunciaParams): Promise<string> {
+    return Denuncias.registrar(params);
+  }
+
+  static revisarDenuncia(
+    denunciaId: string,
+    statusDenuncia: Extract<StatusDenuncia, 'confirmada' | 'rejeitada'>,
+    idRevisor: string
+  ): Promise<void> {
+    return Denuncias.revisar(denunciaId, statusDenuncia, idRevisor);
+  }
+
+  static listarDenuncias(): Promise<Denuncia[]> {
+    return Denuncias.listar();
+  }
+
+  static observarDenuncias(
+    onChange: (denuncias: Denuncia[]) => void,
+    onError: (error: Error) => void
+  ): () => void {
+    return Denuncias.observar(onChange, onError);
+  }
+
+  static listarMinhasDenuncias(usuarioId: string): Promise<Denuncia[]> {
+    return Denuncias.listarMinhas(usuarioId);
+  }
+
+  private static ordenar(denuncias: Denuncia[]): Denuncia[] {
+    return denuncias.sort(
+      (primeira, segunda) => segunda.dataCriacao.getTime() - primeira.dataCriacao.getTime()
+    );
+  }
+
+  private static isStatusDenuncia(value: unknown): value is StatusDenuncia {
+    return typeof value === 'string' && Denuncias.STATUS_VALIDOS.includes(value as StatusDenuncia);
+  }
+
+  private static isTimestamp(value: unknown): value is Timestamp {
+    return (
+      typeof value === 'object' &&
+      value !== null &&
+      'toDate' in value &&
+      typeof value.toDate === 'function'
+    );
+  }
+
+  private static toDate(value: unknown, denunciaId: string): Date {
+    if (value instanceof Date && !Number.isNaN(value.getTime())) {
+      return value;
+    }
+
+    if (Denuncias.isTimestamp(value)) {
+      const date = value.toDate();
+      if (!Number.isNaN(date.getTime())) {
+        return date;
+      }
+    }
+
+    throw new Error(`A denúncia ${denunciaId} possui uma data de criação inválida.`);
+  }
+
+  private static fromSnapshot(snapshot: DocumentSnapshot<DocumentData>): Denuncia {
+    const data = snapshot.data();
+    const denunciaId = snapshot.id;
+
+    if (!data) {
+      throw new Error(`Não foi possível ler os dados da denúncia ${denunciaId}.`);
+    }
+
+    if (
+      typeof data.id !== 'string' ||
+      data.id !== denunciaId ||
+      typeof data.id_denunciador !== 'string' ||
+      !data.id_denunciador ||
+      !Denuncias.isStatusDenuncia(data.statusDenuncia) ||
+      typeof data.bairro !== 'string' ||
+      !data.bairro.trim()
+    ) {
+      throw new Error(`A denúncia ${denunciaId} possui dados obrigatórios inválidos.`);
+    }
+
+    if (
+      !data.localizacao ||
+      typeof data.localizacao.latitude !== 'number' ||
+      typeof data.localizacao.longitude !== 'number'
+    ) {
+      throw new Error(`A denúncia ${denunciaId} possui uma localização inválida.`);
+    }
+
+    const urlsFotos = Array.isArray(data.urlsFotos)
+      ? data.urlsFotos.filter((u: unknown): u is string =>
+          typeof u === 'string' && u.trim().length > 0
+        )
+      : typeof data.urlFoto === 'string' && data.urlFoto.trim().length > 0
+        ? [data.urlFoto.trim()]
+        : [];
+
+    const urlFoto =
+      typeof data.urlFoto === 'string' && data.urlFoto.trim().length > 0
+        ? data.urlFoto.trim()
+        : urlsFotos[0];
+
+    return new Denuncia({
+      id: denunciaId,
+      id_denunciador: data.id_denunciador,
+      id_revisor: typeof data.id_revisor === 'string' && data.id_revisor
+        ? data.id_revisor
+        : undefined,
+      statusDenuncia: data.statusDenuncia,
+      localizacao: {
+        latitude: data.localizacao.latitude,
+        longitude: data.localizacao.longitude,
+      },
+      bairro: data.bairro.trim(),
+      urlFoto,
+      urlsFotos,
+      dataCriacao: Denuncias.toDate(data.dataCriacao, denunciaId),
+    });
+  }
+}
+
+export { Denuncia as DenunciaModel };
