@@ -21,7 +21,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AppColors } from '@/constants/theme';
 import { useAuth } from '@/src/contexts/auth-context';
-import { listarDenuncias } from '@/src/services/denuncias-consulta-service';
+import { Denuncias } from '@/src/models/Denuncia';
 import type { Denuncia } from '@/src/types';
 import {
   criarEvolucao,
@@ -54,7 +54,7 @@ export default function DashboardRoute() {
     setErro(null);
 
     try {
-      const denuncias = await listarDenuncias();
+      const denuncias = await Denuncias.listar();
       setDenuncias(denuncias);
       setStats({
         total: denuncias.length,

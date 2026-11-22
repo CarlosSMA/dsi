@@ -5,7 +5,7 @@ import { Controller, useForm, type FieldErrors } from 'react-hook-form';
 
 import { AppAlert } from '@/components/app-alert';
 import { translateFirebaseError } from '@/src/services/auth-service';
-import { alterarSenha } from '@/src/services/usuario-service';
+import { Usuarios } from '@/src/models/Usuario';
 import type { Usuario } from '@/src/types';
 
 import { alterarSenhaSchema, type AlterarSenhaFormData } from './alterarSenhaSchema';
@@ -64,7 +64,7 @@ export function AlterarSenhaScreen({ usuario }: AlterarSenhaScreenProps) {
 
   const onSubmit = async (data: AlterarSenhaFormData) => {
     try {
-      await alterarSenha(data.senhaAtual, data.novaSenha);
+      await Usuarios.alterarSenha(data.senhaAtual, data.novaSenha);
       reset();
       setAlert({
         variant: 'success',

@@ -16,8 +16,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { AppColors } from '@/constants/theme';
 import { useAuth } from '@/src/contexts/auth-context';
 import { DenunciaListItem } from '@/src/features/denuncias/DenunciaListItem';
-import { revisarDenuncia } from '@/src/services/denuncia-service';
-import { listarDenuncias } from '@/src/services/denuncias-consulta-service';
+import { Denuncias } from '@/src/models/Denuncia';
 import type { Denuncia, StatusDenuncia } from '@/src/types';
 
 export default function DenunciasRoute() {
@@ -39,7 +38,7 @@ export default function DenunciasRoute() {
     setErro(null);
 
     try {
-      setDenuncias(await listarDenuncias());
+      setDenuncias(await Denuncias.listar());
     } catch (error) {
       setErro(
         error instanceof Error
@@ -60,7 +59,7 @@ export default function DenunciasRoute() {
 
       setRevisandoId(denuncia.id);
 
-      revisarDenuncia(denuncia.id, status, usuario.id)
+      Denuncias.revisar(denuncia.id, status, usuario.id)
         .then(() => {
           setDenuncias((atual) =>
             atual.map((item) =>

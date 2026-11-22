@@ -16,7 +16,7 @@ import {
   PONTOS_ESCALA,
   type DistritoScore,
 } from '@/src/features/profile/utils/score-priorizacao';
-import { observarDenuncias } from '@/src/services/denuncias-consulta-service';
+import { Denuncias } from '@/src/models/Denuncia';
 import type { Denuncia } from '@/src/types';
 
 type IconName = ComponentProps<typeof MaterialIcons>['name'];
@@ -60,7 +60,7 @@ export function ScorePesosScreen() {
 
   useEffect(
     () =>
-      observarDenuncias(
+      Denuncias.observar(
         (lista) => {
           setDenuncias(lista);
           setErro(false);

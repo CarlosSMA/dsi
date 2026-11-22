@@ -15,7 +15,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { AppColors } from '@/constants/theme';
 import { DenunciaListItem } from '@/src/features/denuncias/DenunciaListItem';
 import { useAuth } from '@/src/contexts/auth-context';
-import { listarMinhasDenuncias } from '@/src/services/denuncias-consulta-service';
+import { Denuncias } from '@/src/models/Denuncia';
 import type { Denuncia } from '@/src/types';
 
 export default function MinhasDenunciasRoute() {
@@ -41,7 +41,7 @@ export default function MinhasDenunciasRoute() {
       setErro(null);
 
       try {
-        setDenuncias(await listarMinhasDenuncias(usuario.id));
+        setDenuncias(await Denuncias.listarMinhas(usuario.id));
       } catch (error) {
         setErro(
           error instanceof Error

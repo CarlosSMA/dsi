@@ -1,14 +1,10 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import {
   onAuthStateChanged,
-  signInWithEmailAndPassword,
-  createUserWithEmailAndPassword,
-  signInAnonymously,
-  signOut,
   User as FirebaseUser
 } from 'firebase/auth';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
-import { auth, db } from '../services/firebase';
+import { auth } from '../services/firebase';
+import { Usuarios } from '../models/Usuario';
 import { Usuario } from '../types';
 
 interface AuthContextData {
@@ -35,7 +31,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Garante que o app sempre abra na tela de login,
       // encerrando qualquer sessão persistida do Firebase.
       try {
-        await signOut(auth);
+        await Usuarios.logout();
       } catch (error) {
         console.error('Erro ao encerrar sessão anterior:', error);
       }
@@ -45,29 +41,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setCarregando(true);
         try {
           if (firebaseUser) {
-            const userDocRef = doc(db, 'usuarios', firebaseUser.uid);
-            const userDoc = await getDoc(userDocRef);
-
-            if (userDoc.exists()) {
-              const data = userDoc.data();
-              setUsuario({
-                id: firebaseUser.uid,
-                nome: data.nome || 'Usuário',
-                email: firebaseUser.email || '',
-                role: data.role || 'cidadao',
-                cpf: data.cpf || '',
-                numero_matricula: data.numero_matricula || '',
-                dataNascimento: data.dataNascimento || '',
-                telefone: data.telefone || '',
-              });
-            } else {
-              setUsuario({
-                id: firebaseUser.uid,
-                nome: firebaseUser.isAnonymous ? 'Cidadão Anônimo' : (firebaseUser.displayName || 'Cidadão'),
-                email: firebaseUser.email || '',
-                role: 'cidadao',
-              });
-            }
+            const dadosUsuario = await Usuarios.obterPorId(firebaseUser.uid);
+            setUsuario(
+              dadosUsuario
+                ? { ...dadosUsuario, email: firebaseUser.email || dadosUsuario.email }
+                : Usuarios.fromFirebaseUser(firebaseUser)
+            );
           } else {
             setUsuario(null);
           }
@@ -85,30 +64,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   async function login(email: string, senha: string) {
-    await signInWithEmailAndPassword(auth, email, senha);
+    await Usuarios.login(email, senha);
   }
 
   async function cadastro(email: string, senha: string, nome: string) {
-    const cred = await createUserWithEmailAndPassword(auth, email, senha);
-    const novoUsuario: Usuario = {
-      id: cred.user.uid,
-      nome,
-      email,
-      role: 'cidadao',
-      dataCriacao: new Date(),
-      dataAtualizacao: new Date(),
-    };
-
-    await setDoc(doc(db, 'usuarios', cred.user.uid), novoUsuario);
+    const novoUsuario = await Usuarios.cadastro(email, senha, nome);
     setUsuario(novoUsuario);
   }
 
   async function loginAnonimo() {
-    await signInAnonymously(auth);
+    await Usuarios.loginAnonimo();
   }
 
   async function logout() {
-    await signOut(auth);
+    await Usuarios.logout();
     setUsuario(null);
   }
 

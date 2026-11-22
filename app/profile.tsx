@@ -14,7 +14,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { AppColors, Fonts } from '@/constants/theme';
 import { useAuth } from '@/src/contexts/auth-context';
 import { PrefeituraProfileView } from '@/src/features/profile/PrefeituraProfileView';
-import { listarMinhasDenuncias } from '@/src/services/denuncias-consulta-service';
+import { Denuncias } from '@/src/models/Denuncia';
 
 const profilePreview = {
   notifiedSpots: '5',
@@ -45,7 +45,7 @@ export default function ProfileScreen() {
     setErroResumo(false);
 
     try {
-      const denuncias = await listarMinhasDenuncias(usuario.id);
+      const denuncias = await Denuncias.listarMinhas(usuario.id);
       const ativas = denuncias.filter(
         ({ statusDenuncia }) => statusDenuncia === 'pendente'
       ).length;

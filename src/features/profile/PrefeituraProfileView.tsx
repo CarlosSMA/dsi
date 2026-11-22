@@ -19,7 +19,7 @@ import {
   NIVEL_CORES,
   type DistritoScore,
 } from '@/src/features/profile/utils/score-priorizacao';
-import { observarDenuncias } from '@/src/services/denuncias-consulta-service';
+import { Denuncias } from '@/src/models/Denuncia';
 import type { Denuncia, Usuario } from '@/src/types';
 import { useAuth } from '@/src/contexts/auth-context';
 
@@ -39,7 +39,7 @@ export function PrefeituraProfileView({ usuario }: PrefeituraProfileViewProps) {
   // Acompanha as denúncias em tempo real: métricas e score se atualizam sozinhos quando algo muda.
   useEffect(
     () =>
-      observarDenuncias(
+      Denuncias.observar(
         (lista) => {
           setDenuncias(lista);
           setErroDenuncias(false);
