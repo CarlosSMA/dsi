@@ -6,7 +6,7 @@ import { Controller, useForm, type FieldErrors } from 'react-hook-form';
 import { AppAlert } from '@/components/app-alert';
 import { useAuth } from '@/src/contexts/auth-context';
 import { auth } from '@/src/services/firebase';
-import { Usuarios } from '@/src/models/Usuario';
+import { UsuarioManager } from '@/src/models/Usuario';
 import type { Usuario } from '@/src/types';
 
 import {
@@ -74,7 +74,7 @@ export function MeusDadosScreen({ usuario }: MeusDadosScreenProps) {
     };
 
     try {
-      await Usuarios.atualizarDadosCadastrais(usuario.id, dados);
+      await UsuarioManager.atualizarDadosCadastrais(usuario.id, dados);
       atualizarUsuario(dados);
       reset({ nome: dados.nome, dataNascimento: data.dataNascimento, telefone: data.telefone });
       setAlert({ variant: 'success', title: 'Dados atualizados', messages: ['Suas alterações foram salvas.'] });

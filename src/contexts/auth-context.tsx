@@ -4,7 +4,7 @@ import {
   User as FirebaseUser
 } from 'firebase/auth';
 import { auth } from '../services/firebase';
-import { Usuarios } from '../models/Usuario';
+import { UsuarioManager } from '../models/Usuario';
 import { Usuario } from '../types';
 
 interface AuthContextData {
@@ -31,7 +31,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Garante que o app sempre abra na tela de login,
       // encerrando qualquer sessão persistida do Firebase.
       try {
-        await Usuarios.logout();
+        await UsuarioManager.logout();
       } catch (error) {
         console.error('Erro ao encerrar sessão anterior:', error);
       }
@@ -41,11 +41,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setCarregando(true);
         try {
           if (firebaseUser) {
-            const dadosUsuario = await Usuarios.obterPorId(firebaseUser.uid);
+            const dadosUsuario = await UsuarioManager.obterPorId(firebaseUser.uid);
             setUsuario(
               dadosUsuario
                 ? { ...dadosUsuario, email: firebaseUser.email || dadosUsuario.email }
-                : Usuarios.fromFirebaseUser(firebaseUser)
+                : UsuarioManager.fromFirebaseUser(firebaseUser)
             );
           } else {
             setUsuario(null);
@@ -64,20 +64,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   async function login(email: string, senha: string) {
-    await Usuarios.login(email, senha);
+    await UsuarioManager.login(email, senha);
   }
 
   async function cadastro(email: string, senha: string, nome: string) {
-    const novoUsuario = await Usuarios.cadastro(email, senha, nome);
+    const novoUsuario = await UsuarioManager.cadastro(email, senha, nome);
     setUsuario(novoUsuario);
   }
 
   async function loginAnonimo() {
-    await Usuarios.loginAnonimo();
+    await UsuarioManager.loginAnonimo();
   }
 
   async function logout() {
-    await Usuarios.logout();
+    await UsuarioManager.logout();
     setUsuario(null);
   }
 

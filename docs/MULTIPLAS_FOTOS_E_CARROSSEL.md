@@ -18,10 +18,10 @@ Durante a banca de avaliação da disciplina de Desenvolvimento de Sistemas de I
 
 ### 2.1. Classe de Domínio POO (`src/models/Denuncia.ts`)
 
-A classe `DenunciaModel` encapsula todos os dados e comportamentos do domínio de ocorrências:
+A classe `Denuncia` encapsula os dados e comportamentos da ocorrência. As operações de coleção são agrupadas em `DenunciaManager`:
 
 ```typescript
-export class DenunciaModel implements Denuncia {
+export class Denuncia implements Denuncia {
   public id: string;
   public id_denunciador: string;
   public id_revisor?: string;

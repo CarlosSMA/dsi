@@ -197,7 +197,7 @@ export interface CriarDenunciaParams {
   urlsFotos?: string[];
 }
 
-export class Denuncias {
+export class DenunciaManager {
   private static readonly STATUS_VALIDOS: StatusDenuncia[] = [
     'pendente',
     'confirmada',
@@ -266,7 +266,7 @@ export class Denuncias {
 
   static async listar(): Promise<Denuncia[]> {
     const snapshot = await getDocs(collection(db, 'denuncias'));
-    return Denuncias.ordenar(snapshot.docs.map((item) => Denuncias.fromSnapshot(item)));
+    return DenunciaManager.ordenar(snapshot.docs.map((item) => DenunciaManager.fromSnapshot(item)));
   }
 
   static observar(
@@ -277,7 +277,7 @@ export class Denuncias {
       collection(db, 'denuncias'),
       (snapshot) => {
         try {
-          onChange(Denuncias.ordenar(snapshot.docs.map((item) => Denuncias.fromSnapshot(item))));
+          onChange(DenunciaManager.ordenar(snapshot.docs.map((item) => DenunciaManager.fromSnapshot(item))));
         } catch (error) {
           onError(error instanceof Error ? error : new Error(String(error)));
         }
@@ -298,11 +298,11 @@ export class Denuncias {
       where('id_denunciador', '==', usuarioIdNormalizado)
     );
     const snapshot = await getDocs(denunciasQuery);
-    return Denuncias.ordenar(snapshot.docs.map((item) => Denuncias.fromSnapshot(item)));
+    return DenunciaManager.ordenar(snapshot.docs.map((item) => DenunciaManager.fromSnapshot(item)));
   }
 
   static registrarDenuncia(params: CriarDenunciaParams): Promise<string> {
-    return Denuncias.registrar(params);
+    return DenunciaManager.registrar(params);
   }
 
   static revisarDenuncia(
@@ -310,22 +310,22 @@ export class Denuncias {
     statusDenuncia: Extract<StatusDenuncia, 'confirmada' | 'rejeitada'>,
     idRevisor: string
   ): Promise<void> {
-    return Denuncias.revisar(denunciaId, statusDenuncia, idRevisor);
+    return DenunciaManager.revisar(denunciaId, statusDenuncia, idRevisor);
   }
 
   static listarDenuncias(): Promise<Denuncia[]> {
-    return Denuncias.listar();
+    return DenunciaManager.listar();
   }
 
   static observarDenuncias(
     onChange: (denuncias: Denuncia[]) => void,
     onError: (error: Error) => void
   ): () => void {
-    return Denuncias.observar(onChange, onError);
+    return DenunciaManager.observar(onChange, onError);
   }
 
   static listarMinhasDenuncias(usuarioId: string): Promise<Denuncia[]> {
-    return Denuncias.listarMinhas(usuarioId);
+    return DenunciaManager.listarMinhas(usuarioId);
   }
 
   private static ordenar(denuncias: Denuncia[]): Denuncia[] {
@@ -335,7 +335,7 @@ export class Denuncias {
   }
 
   private static isStatusDenuncia(value: unknown): value is StatusDenuncia {
-    return typeof value === 'string' && Denuncias.STATUS_VALIDOS.includes(value as StatusDenuncia);
+    return typeof value === 'string' && DenunciaManager.STATUS_VALIDOS.includes(value as StatusDenuncia);
   }
 
   private static isTimestamp(value: unknown): value is Timestamp {
@@ -352,7 +352,7 @@ export class Denuncias {
       return value;
     }
 
-    if (Denuncias.isTimestamp(value)) {
+    if (DenunciaManager.isTimestamp(value)) {
       const date = value.toDate();
       if (!Number.isNaN(date.getTime())) {
         return date;
@@ -375,7 +375,7 @@ export class Denuncias {
       data.id !== denunciaId ||
       typeof data.id_denunciador !== 'string' ||
       !data.id_denunciador ||
-      !Denuncias.isStatusDenuncia(data.statusDenuncia) ||
+      !DenunciaManager.isStatusDenuncia(data.statusDenuncia) ||
       typeof data.bairro !== 'string' ||
       !data.bairro.trim()
     ) {
@@ -417,9 +417,7 @@ export class Denuncias {
       bairro: data.bairro.trim(),
       urlFoto,
       urlsFotos,
-      dataCriacao: Denuncias.toDate(data.dataCriacao, denunciaId),
+      dataCriacao: DenunciaManager.toDate(data.dataCriacao, denunciaId),
     });
   }
 }
-
-export { Denuncia as DenunciaModel };

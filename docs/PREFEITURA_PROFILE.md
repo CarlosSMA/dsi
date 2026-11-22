@@ -53,7 +53,7 @@ flowchart TD
 
 ## 3. Consulta e apresentação das denúncias
 
-A tela `/denuncias` utiliza o serviço `listarDenuncias()` para consultar a coleção
+A tela `/denuncias` utiliza `DenunciaManager.listar()` para consultar a coleção
 `denuncias`. Os registros são validados, convertidos para o tipo `Denuncia` e
 ordenados da ocorrência mais recente para a mais antiga.
 

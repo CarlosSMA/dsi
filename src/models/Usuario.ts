@@ -59,7 +59,7 @@ export class Usuario implements IUsuario {
 }
 
 export class AgenteMunicipalModel extends Usuario implements AgenteMunicipal {
-  public declare numero_matricula: string;
+  public numero_matricula: string;
 
   constructor(dados: AgenteMunicipal) {
     super(dados);
@@ -73,7 +73,7 @@ export interface DadosCadastraisInput {
   telefone: string;
 }
 
-export class Usuarios {
+export class UsuarioManager {
   static async login(email: string, senha: string): Promise<void> {
     await signInWithEmailAndPassword(auth, email, senha);
   }
@@ -178,5 +178,3 @@ export class Usuarios {
     await updatePassword(user, novaSenha);
   }
 }
-
-export { Usuario as UsuarioModel };

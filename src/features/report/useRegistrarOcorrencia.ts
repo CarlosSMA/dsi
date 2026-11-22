@@ -5,7 +5,7 @@ import { Alert } from 'react-native';
 
 import { takePhoto } from '@/components/camera';
 import { Gps } from '@/src/lib/gps';
-import { Denuncias } from '@/src/models/Denuncia';
+import { DenunciaManager } from '@/src/models/Denuncia';
 import {
   removeMultipleReportPhotos,
   uploadMultipleReportPhotos,
@@ -134,7 +134,7 @@ export function useRegistrarOcorrencia(usuario: Usuario | null) {
       const pathsParaRemocao = uploadedPhotos.map((p) => p.path);
 
       try {
-        await Denuncias.registrar({
+        await DenunciaManager.registrar({
           id: reportId,
           id_denunciador: usuario.id,
           latitude: location.latitude,
