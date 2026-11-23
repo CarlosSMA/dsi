@@ -1,10 +1,11 @@
 // Leaflet CSS e carregado dinamicamente no navegador para compatibilidade com o Metro web bundler
 
-import type { Control, LayerGroup, Map as LeafletMap } from 'leaflet';
+import type { Control, LayerGroup, Map as LeafletMap, Marker, Polygon } from 'leaflet';
 import { useEffect, useRef, useState } from 'react';
 import { Platform, StyleSheet, View } from 'react-native';
 
 import { MapLocateButton } from '@/components/map-locate-button';
+import { MOSQUITO_SVG } from '@/components/mosquito-svg';
 import {
   areaDoBairro,
   BAIRRO_BORDER,
@@ -29,11 +30,13 @@ import {
   RECIFE_FIT_PADDING,
   RECIFE_MIN_ZOOM,
   RECIFE_OUTLINE,
+  RISCO_AREA_ESTILO,
   type MapCoordinate,
   type MapFocus,
   type MapScope,
 } from '@/constants/map';
 import { AppColors } from '@/constants/theme';
+import type { NivelRisco, RiscoMapa } from '@/src/features/profile/utils/score-priorizacao';
 import { Gps } from '@/src/lib/gps';
 
 interface MapSurfaceProps {
@@ -41,7 +44,15 @@ interface MapSurfaceProps {
   scope: MapScope;
   // Chamado quando o cidadão clica numa região, para abrir os bairros dela.
   onSelectArea?: (focus: MapFocus) => void;
+  // Nível de risco de dengue das regiões e dos bairros; sem ele, as regiões ficam com a cor neutra.
+  risco?: RiscoMapa | null;
+  // Chamado ao tocar na bolinha do mosquito de um bairro, com o nome dele.
+  onSelectRisco?: (bairro: string) => void;
 }
+
+// Bolinha do mosquito (mesmo visual do components/mosquito-badge.tsx), acima do nome da região.
+const riscoBadgeHtml = (nivel: NivelRisco) =>
+  `<div style="position:absolute;transform:translate(-50%,calc(-100% - 12px));width:40px;height:40px;box-sizing:border-box;border-radius:20px;border:3px solid #1A1A1A;background:${RISCO_AREA_ESTILO[nivel].badge};display:flex;align-items:center;justify-content:center;cursor:pointer">${MOSQUITO_SVG[nivel]}</div>`;
 
 // Espaço livre para a busca no topo e para o card e o botão de foto embaixo.
 const PADDING_TOP_LEFT: [number, number] = [48, 140];
@@ -74,7 +85,7 @@ const PIN_HTML = `
 
 // O react-native-maps não roda na web; aqui o mapa é feito com Leaflet.
 // O Leaflet usa o navegador, então só é carregado depois que a tela abre (a web é pré-renderizada).
-export default function MapSurface({ focus, scope, onSelectArea }: MapSurfaceProps) {
+export default function MapSurface({ focus, scope, onSelectArea, risco, onSelectRisco }: MapSurfaceProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<LeafletMap | null>(null);
   const layersRef = useRef<LayerGroup | null>(null);
@@ -85,11 +96,18 @@ export default function MapSurface({ focus, scope, onSelectArea }: MapSurfacePro
   const openAreaRef = useRef<string | undefined>(undefined);
   const updateDetailRef = useRef<(() => void) | null>(null);
   const onSelectAreaRef = useRef(onSelectArea);
+  const microPolygonsRef = useRef(new Map<string, Polygon>());
+  const riscoMarkersRef = useRef<{ area: string | undefined; marker: Marker }[]>([]);
+  const onSelectRiscoRef = useRef(onSelectRisco);
   const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {
     onSelectAreaRef.current = onSelectArea;
   }, [onSelectArea]);
+
+  useEffect(() => {
+    onSelectRiscoRef.current = onSelectRisco;
+  }, [onSelectRisco]);
 
   useEffect(() => {
     let cancelled = false;
@@ -213,6 +231,7 @@ export default function MapSurface({ focus, scope, onSelectArea }: MapSurfacePro
         fillColor: MICRO_FILL,
         fillOpacity: 1,
       }).addTo(base);
+      microPolygonsRef.current.set(micro.codigo, polygon);
       // Clicar numa região abre os bairros que a compõem.
       polygon.on('click', () => onSelectAreaRef.current?.(focusForArea(micro)));
     }
@@ -236,6 +255,10 @@ export default function MapSurface({ focus, scope, onSelectArea }: MapSurfacePro
         const visible = !showsDetail && area.area !== openArea;
         show(area.marker, visible && labelFits(area.nome, area.lonSpan * pxPerDegree));
       }
+      // As bolinhas do mosquito só aparecem nos bairros da região aberta.
+      for (const bolinha of riscoMarkersRef.current) {
+        show(bolinha.marker, openArea !== undefined && bolinha.area === openArea);
+      }
       for (const bairro of bairros) {
         const visible = showsDetail || (openArea !== undefined && bairro.area === openArea);
         show(bairro.polygon, visible);
@@ -251,6 +274,41 @@ export default function MapSurface({ focus, scope, onSelectArea }: MapSurfacePro
       updateDetailRef.current = null;
     };
   }, [scope, isReady]);
+
+  // Cor de cada região conforme o risco de dengue: verde (baixo), amarelo (médio) ou vermelho (alto).
+  // Também prepara a bolinha do mosquito dos bairros com denúncias; clicar nela mostra o aviso do bairro.
+  useEffect(() => {
+    const L = leafletRef.current;
+    const base = baseRef.current;
+    if (!L || !base) {
+      return;
+    }
+
+    for (const micro of RECIFE_MICRORREGIOES) {
+      const nivel = risco?.areas.get(micro.codigo);
+      microPolygonsRef.current.get(micro.codigo)?.setStyle({
+        color: nivel ? RISCO_AREA_ESTILO[nivel].border : MICRO_BORDER,
+        weight: nivel ? 1.5 : 1,
+        fillColor: nivel ? RISCO_AREA_ESTILO[nivel].fill : MICRO_FILL,
+      });
+    }
+
+    riscoMarkersRef.current.forEach(({ marker }) => base.removeLayer(marker));
+    riscoMarkersRef.current = RECIFE_BAIRROS.flatMap((bairro) => {
+      const nivel = risco?.bairros.get(bairro.nome);
+      if (!nivel) {
+        return [];
+      }
+      const marker = L.marker([bairro.label[1], bairro.label[0]], {
+        icon: L.divIcon({ html: riscoBadgeHtml(nivel), className: '', iconSize: [0, 0] }),
+        keyboard: false,
+        zIndexOffset: 1000,
+      });
+      marker.on('click', () => onSelectRiscoRef.current?.(bairro.nome));
+      return [{ area: areaDoBairro(bairro.nome), marker }];
+    });
+    updateDetailRef.current?.();
+  }, [risco, scope, isReady]);
 
   useEffect(() => {
     openAreaRef.current = focus?.area;

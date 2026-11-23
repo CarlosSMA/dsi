@@ -1,5 +1,6 @@
-import { findBairro } from '@/constants/map';
+import { areaDoBairro, findBairro } from '@/constants/map';
 import { RECIFE_BAIRROS } from '@/constants/recife-bairros';
+import { RECIFE_MICRORREGIOES } from '@/constants/recife-microrregioes';
 import type { Denuncia } from '@/src/types';
 
 // Score de priorização: indica em quais distritos (as 6 RPAs do Recife) a Vigilância Ambiental deve agir primeiro.
@@ -67,16 +68,16 @@ const DIA_MS = 24 * 60 * 60 * 1000;
 const normalizar = (texto: string) =>
   texto.normalize('NFD').replace(/[̀-ͯ]/g, '').trim().toLowerCase();
 
-// A microrregião do bairro começa pelo número da RPA (ex.: "3.1" fica na RPA 3).
-const RPA_POR_BAIRRO = new Map(RECIFE_BAIRROS.map((bairro) => [normalizar(bairro.nome), bairro.micro.split('.')[0]]));
+const BAIRRO_POR_NOME = new Map(RECIFE_BAIRROS.map((bairro) => [normalizar(bairro.nome), bairro]));
 
 // Usa a localização da denúncia; se ela cair fora dos bairros mapeados, tenta pelo nome do bairro informado.
+function bairroDaDenuncia(denuncia: Denuncia) {
+  return findBairro(denuncia.localizacao) ?? BAIRRO_POR_NOME.get(normalizar(denuncia.bairro));
+}
+
+// A microrregião do bairro começa pelo número da RPA (ex.: "3.1" fica na RPA 3).
 function rpaDaDenuncia(denuncia: Denuncia): string | undefined {
-  const bairro = findBairro(denuncia.localizacao);
-  if (bairro) {
-    return bairro.micro.split('.')[0];
-  }
-  return RPA_POR_BAIRRO.get(normalizar(denuncia.bairro));
+  return bairroDaDenuncia(denuncia)?.micro.split('.')[0];
 }
 
 type TipoContagem = 'confirmadasRecentes' | 'pendentes' | 'pendentesAtrasadas';
@@ -136,4 +137,41 @@ export function calcularScorePriorizacao(denuncias: Denuncia[], agora = Date.now
   const geral = Math.round(distritos.reduce((soma, { risco }) => soma + risco, 0) / distritos.length);
 
   return { geral, nivelGeral: nivelDoRisco(geral), distritos, totalConsideradas };
+}
+
+export interface RiscoMapa {
+  // Nível de cada uma das 12 regiões do mapa, pelo código da região.
+  areas: Map<string, NivelRisco>;
+  // Nível de cada bairro com pelo menos uma denúncia não rejeitada, pelo nome do bairro.
+  bairros: Map<string, NivelRisco>;
+}
+
+const contagemVazia = () => ({ confirmadasRecentes: 0, pendentes: 0, pendentesAtrasadas: 0 });
+const nivelDaContagem = (contagem: Record<TipoContagem, number>) =>
+  nivelDoRisco(riscoDosPontos(pontosDoDistrito(contagem)));
+
+/**
+ * Risco das regiões e dos bairros no mapa, com a mesma fórmula e os mesmos pesos do score dos distritos.
+ */
+export function calcularRiscoMapa(denuncias: Denuncia[], agora = Date.now()): RiscoMapa {
+  const porArea = new Map(RECIFE_MICRORREGIOES.map(({ codigo }) => [codigo, contagemVazia()]));
+  const porBairro = new Map<string, Record<TipoContagem, number>>();
+
+  for (const denuncia of denuncias) {
+    const bairro = bairroDaDenuncia(denuncia);
+    if (!bairro || denuncia.statusDenuncia === 'rejeitada') continue;
+
+    if (!porBairro.has(bairro.nome)) porBairro.set(bairro.nome, contagemVazia());
+    const tipo = tipoDaDenuncia(denuncia, agora);
+    if (!tipo) continue;
+
+    porBairro.get(bairro.nome)![tipo] += 1;
+    const area = porArea.get(areaDoBairro(bairro.nome) ?? '');
+    if (area) area[tipo] += 1;
+  }
+
+  return {
+    areas: new Map([...porArea].map(([codigo, contagem]) => [codigo, nivelDaContagem(contagem)])),
+    bairros: new Map([...porBairro].map(([nome, contagem]) => [nome, nivelDaContagem(contagem)])),
+  };
 }
