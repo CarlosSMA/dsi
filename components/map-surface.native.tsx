@@ -5,6 +5,7 @@ import MapView, { Marker, Polygon, PROVIDER_DEFAULT, UrlTile, type Region } from
 import { Platform, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 
 import { MapLocateButton } from '@/components/map-locate-button';
+import { MosquitoBadge } from '@/components/mosquito-badge';
 import {
   areaDoBairro,
   BAIRRO_DETAIL_DELTA,
@@ -29,11 +30,13 @@ import {
   RECIFE_MIN_ZOOM,
   RECIFE_OUTLINE,
   RECIFE_REGION,
+  RISCO_AREA_ESTILO,
   toMapCoordinates,
   type MapFocus,
   type MapScope,
 } from '@/constants/map';
 import { AppColors } from '@/constants/theme';
+import type { NivelRisco, RiscoMapa } from '@/src/features/profile/utils/score-priorizacao';
 import { Gps } from '@/src/lib/gps';
 
 interface MapSurfaceProps {
@@ -41,6 +44,10 @@ interface MapSurfaceProps {
   scope: MapScope;
   // Chamado quando o cidadão toca numa região, para abrir os bairros dela.
   onSelectArea?: (focus: MapFocus) => void;
+  // Nível de risco de dengue das regiões e dos bairros; sem ele, as regiões ficam com a cor neutra.
+  risco?: RiscoMapa | null;
+  // Chamado ao tocar na bolinha do mosquito de um bairro, com o nome dele.
+  onSelectRisco?: (bairro: string) => void;
 }
 
 const EDGE_PADDING = { top: 140, right: 48, bottom: 220, left: 48 };
@@ -75,7 +82,7 @@ const zoomOf = (longitudeDelta: number) => Math.round(Math.log2(360 / longitudeD
 const TILE_CACHE_PATH = new Directory(Paths.cache, 'map-tiles').uri;
 const TILE_CACHE_MAX_AGE = 7 * 24 * 60 * 60;
 const deltaOf = (zoom: number) => 360 / 2 ** zoom;
-export default function MapSurface({ focus, scope, onSelectArea }: MapSurfaceProps) {
+export default function MapSurface({ focus, scope, onSelectArea, risco, onSelectRisco }: MapSurfaceProps) {
   const mapRef = useRef<MapView>(null);
   const { width: screenWidth } = useWindowDimensions();
   const [zoom, setZoom] = useState(zoomOf(RECIFE_REGION.longitudeDelta));
@@ -180,21 +187,23 @@ export default function MapSurface({ focus, scope, onSelectArea }: MapSurfacePro
 
         {/* Os dois perfis veem as regiões do Recife (e, de perto ou ao abrir uma região, os bairros).
             A diferença é o zoom: cidadãos vão só até o nível de bairro; a prefeitura chega às ruas. */}
-        {MICRO_SHAPES.flatMap((micro) =>
-          micro.rings.map((ring, index) => (
+        {/* A cor de cada região segue o risco de dengue: verde (baixo), amarelo (médio) ou vermelho (alto). */}
+        {MICRO_SHAPES.flatMap((micro) => {
+          const nivel = risco?.areas.get(micro.id);
+          return micro.rings.map((ring, index) => (
             <Polygon
               key={`${micro.id}-${index}`}
               coordinates={ring}
-              fillColor={MICRO_FILL}
-              strokeColor={MICRO_BORDER}
-              strokeWidth={1}
+              fillColor={nivel ? RISCO_AREA_ESTILO[nivel].fill : MICRO_FILL}
+              strokeColor={nivel ? RISCO_AREA_ESTILO[nivel].border : MICRO_BORDER}
+              strokeWidth={nivel ? 1.5 : 1}
               zIndex={2}
               tappable
               // Tocar numa região abre os bairros que a compõem.
               onPress={() => onSelectArea?.(micro.focus)}
             />
-          )),
-        )}
+          ));
+        })}
 
         {visibleBairros.flatMap((bairro) =>
           bairro.rings.map((ring, index) => (
@@ -220,6 +229,21 @@ export default function MapSurface({ focus, scope, onSelectArea }: MapSurfacePro
             <Text style={styles.bairroLabel}>{bairro.nome}</Text>
           </Marker>
         ))}
+
+        {/* Com uma região aberta, a bolinha do mosquito aparece sobre os bairros dela que tiveram denúncias,
+            com a expressão do risco de cada bairro. */}
+        {visibleBairros.map((bairro) => {
+          const nivel = openArea && bairro.area === openArea ? risco?.bairros.get(bairro.nome) : undefined;
+          return nivel ? (
+            // Recria o marcador quando o nível muda, para o mapa redesenhar a imagem nova.
+            <RiscoMarker
+              key={`risco-${bairro.id}-${nivel}`}
+              coordinate={bairro.label}
+              nivel={nivel}
+              onPress={() => onSelectRisco?.(bairro.nome)}
+            />
+          ) : null;
+        })}
 
         {focus?.outline?.map((ring, index) => (
           <Polygon
@@ -251,6 +275,39 @@ export default function MapSurface({ focus, scope, onSelectArea }: MapSurfacePro
 
       <Text style={styles.attribution}>{MAP_ATTRIBUTION}</Text>
     </>
+  );
+}
+
+interface RiscoMarkerProps {
+  coordinate: { latitude: number; longitude: number };
+  nivel: NivelRisco;
+  onPress: () => void;
+}
+
+function RiscoMarker({ coordinate, nivel, onPress }: RiscoMarkerProps) {
+  // O marcador acompanha a imagem só até ela carregar; depois fica parado, para não pesar no mapa.
+  const [tracks, setTracks] = useState(true);
+
+  // Garantia caso o aviso de carregamento da imagem não chegue.
+  useEffect(() => {
+    const id = setTimeout(() => setTracks(false), 1500);
+    return () => clearTimeout(id);
+  }, []);
+
+  return (
+    <Marker
+      coordinate={coordinate}
+      // Fica acima do nome da região: no Android pelo anchor, no Apple Maps pelo centerOffset.
+      anchor={{ x: 0.5, y: 1.35 }}
+      centerOffset={{ x: 0, y: -34 }}
+      tracksViewChanges={tracks}
+      zIndex={6}
+      onPress={(event) => {
+        event.stopPropagation();
+        onPress();
+      }}>
+      <MosquitoBadge nivel={nivel} onLoad={() => setTracks(false)} />
+    </Marker>
   );
 }
 

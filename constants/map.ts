@@ -52,6 +52,30 @@ export const BAIRRO_BORDER = 'rgba(28, 100, 242, 0.3)';
 
 // Fora do Recife, o mapa fica esmaecido por uma película branca, para a cidade ser o destaque.
 // Retângulo bem maior que o Recife, com o contorno da cidade como "furo".
+// Cores das regiões no mapa conforme o risco de dengue: verde (baixo), amarelo (médio) e vermelho (alto).
+// `badge` é o fundo da bolinha do mosquito que fica sobre cada região.
+export const RISCO_AREA_ESTILO = {
+  baixo: { fill: 'rgba(16, 185, 129, 0.16)', border: '#34D399', badge: '#6EE7B7', texto: '#047857' },
+  medio: { fill: 'rgba(250, 204, 21, 0.22)', border: '#EAB308', badge: '#FDE047', texto: '#A16207' },
+  alto: { fill: 'rgba(239, 68, 68, 0.2)', border: '#EF4444', badge: '#FCA5A5', texto: '#B91C1C' },
+} as const;
+
+// Aviso mostrado ao tocar na bolinha do mosquito de um bairro.
+export const RISCO_AREA_AVISO = {
+  baixo: {
+    titulo: 'Risco baixo',
+    texto: 'Poucos sinais do mosquito neste bairro. Continue evitando água parada.',
+  },
+  medio: {
+    titulo: 'Tome cuidado',
+    texto: 'Há focos do mosquito neste bairro. Elimine água parada e use repelente.',
+  },
+  alto: {
+    titulo: 'Risco crítico',
+    texto: 'Muitos focos do mosquito neste bairro. Redobre os cuidados e procure um posto de saúde se tiver febre.',
+  },
+} as const;
+
 export const OUTSIDE_RECIFE_MASK: MapCoordinate[] = [
   { latitude: -7.0, longitude: -36.0 },
   { latitude: -7.0, longitude: -34.0 },
